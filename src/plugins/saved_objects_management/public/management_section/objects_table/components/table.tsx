@@ -46,6 +46,7 @@ import {
   EuiText,
   EuiTableFieldDataColumnType,
   EuiTableActionsColumnType,
+  Query,
 } from '@elastic/eui';
 import { i18n } from '@osd/i18n';
 import { FormattedMessage } from '@osd/i18n/react';
@@ -83,6 +84,7 @@ export interface TableProps {
   onShowRelationships: (object: SavedObjectWithMetadata) => void;
   canGoInApp: (obj: SavedObjectWithMetadata) => boolean;
   dateFormat: string;
+  query?: Query;
 }
 
 interface TableState {
@@ -358,6 +360,7 @@ export class Table extends PureComponent<TableProps, TableState> {
           box={{ 'data-test-subj': 'savedObjectSearchBar' }}
           filters={filters as any}
           onChange={this.onChange}
+          query={this.props.query}
           toolsRight={[
             <EuiButton
               key="deleteSO"

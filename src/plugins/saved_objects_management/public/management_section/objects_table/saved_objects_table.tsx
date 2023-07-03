@@ -91,6 +91,11 @@ import {
 } from '../../services';
 import { Header, Table, Flyout, Relationships } from './components';
 import { DataPublicPluginStart } from '../../../../../plugins/data/public';
+import {
+  createOsdUrlStateStorage,
+  createStateContainer,
+  syncState,
+} from '../../../../../plugins/opensearch_dashboards_utils/public';
 
 interface ExportAllOption {
   id: string;
@@ -114,6 +119,7 @@ export interface SavedObjectsTableProps {
   goInspectObject: (obj: SavedObjectWithMetadata) => void;
   canGoInApp: (obj: SavedObjectWithMetadata) => boolean;
   dateFormat: string;
+  title: string;
 }
 
 export interface SavedObjectsTableState {
@@ -137,22 +143,63 @@ export interface SavedObjectsTableState {
   isIncludeReferencesDeepChecked: boolean;
 }
 
+interface IStateStorage {
+  page: number;
+  perPage: number;
+  activeQueryString: string;
+}
+
 export class SavedObjectsTable extends Component<SavedObjectsTableProps, SavedObjectsTableState> {
   private _isMounted = false;
+  private transformComponentStateToUrlState = (componentState = this.state) => {
+    return {
+      page: componentState.page,
+      perPage: componentState.perPage,
+      activeQueryString: componentState.activeQuery.text,
+    };
+  };
+
+  private transformUrlStateToComponentState = (state: IStateStorage | null) => {
+    if (!state) {
+      return {};
+    }
+
+    return {
+      page: state.page,
+      perPage: state.perPage,
+      activeQuery: Query.parse(state.activeQueryString),
+    };
+  };
+
+  private defaultState = {
+    page: 0,
+    perPage: this.props.perPageConfig || 50,
+    activeQuery: Query.parse(''),
+  };
+  private stateContainer = createStateContainer(
+    this.transformComponentStateToUrlState(this.defaultState)
+  );
+  private stateStorage = createOsdUrlStateStorage();
+  private syncState = syncState({
+    storageKey: '_g',
+    stateContainer: this.stateContainer,
+    stateStorage: this.stateStorage,
+  });
 
   constructor(props: SavedObjectsTableProps) {
     super(props);
 
+    this.syncState.start();
+
     this.state = {
+      ...this.defaultState,
+      ...this.transformUrlStateToComponentState(this.stateStorage.get('_g')),
       totalCount: 0,
-      page: 0,
-      perPage: props.perPageConfig || 50,
       savedObjects: [],
       savedObjectCounts: props.allowedTypes.reduce((typeToCountMap, type) => {
         typeToCountMap[type] = 0;
         return typeToCountMap;
       }, {} as Record<string, number>),
-      activeQuery: Query.parse(''),
       selectedSavedObjects: [],
       isShowingImportFlyout: false,
       isSearching: false,
@@ -177,6 +224,7 @@ export class SavedObjectsTable extends Component<SavedObjectsTableProps, SavedOb
   componentWillUnmount() {
     this._isMounted = false;
     this.debouncedFetchObjects.cancel();
+    this.syncState.stop();
   }
 
   fetchCounts = async () => {
@@ -241,7 +289,10 @@ export class SavedObjectsTable extends Component<SavedObjectsTableProps, SavedOb
   };
 
   fetchSavedObjects = () => {
-    this.setState({ isSearching: true }, this.debouncedFetchObjects);
+    this.setState({ isSearching: true }, () => {
+      this.debouncedFetchObjects();
+      this.stateContainer.set(this.transformComponentStateToUrlState());
+    });
   };
 
   fetchSavedObject = (type: string, id: string) => {
@@ -847,45 +898,49 @@ export class SavedObjectsTable extends Component<SavedObjectsTableProps, SavedOb
     }
 
     return (
-      <EuiPageContent horizontalPosition="center">
-        {this.renderFlyout()}
-        {this.renderRelationships()}
-        {this.renderDeleteConfirmModal()}
-        {this.renderExportAllOptionsModal()}
-        <Header
-          onExportAll={() => this.setState({ isShowingExportAllOptionsModal: true })}
-          onImport={this.showImportFlyout}
-          onRefresh={this.refreshObjects}
-          filteredCount={filteredItemCount}
-        />
-        <EuiSpacer size="xs" />
-        <RedirectAppLinks application={applications}>
-          <Table
-            basePath={http.basePath}
-            itemId={'id'}
-            actionRegistry={this.props.actionRegistry}
-            columnRegistry={this.props.columnRegistry}
-            selectionConfig={selectionConfig}
-            selectedSavedObjects={selectedSavedObjects}
-            onQueryChange={this.onQueryChange}
-            onTableChange={this.onTableChange}
-            filters={filters}
-            onExport={this.onExport}
-            canDelete={applications.capabilities.savedObjectsManagement.delete as boolean}
-            onDelete={this.onDelete}
-            onActionRefresh={this.refreshObject}
-            goInspectObject={this.props.goInspectObject}
-            pageIndex={page}
-            pageSize={perPage}
-            items={savedObjects}
-            totalItemCount={filteredItemCount}
-            isSearching={isSearching}
-            onShowRelationships={this.onShowRelationships}
-            canGoInApp={this.props.canGoInApp}
-            dateFormat={this.props.dateFormat}
+      <div style={{ width: '75%', margin: '40px auto' }}>
+        <EuiPageContent horizontalPosition="center">
+          {this.renderFlyout()}
+          {this.renderRelationships()}
+          {this.renderDeleteConfirmModal()}
+          {this.renderExportAllOptionsModal()}
+          <Header
+            onExportAll={() => this.setState({ isShowingExportAllOptionsModal: true })}
+            onImport={this.showImportFlyout}
+            onRefresh={this.refreshObjects}
+            filteredCount={filteredItemCount}
+            title={this.props.title}
           />
-        </RedirectAppLinks>
-      </EuiPageContent>
+          <EuiSpacer size="xs" />
+          <RedirectAppLinks application={applications}>
+            <Table
+              basePath={http.basePath}
+              itemId={'id'}
+              actionRegistry={this.props.actionRegistry}
+              columnRegistry={this.props.columnRegistry}
+              selectionConfig={selectionConfig}
+              selectedSavedObjects={selectedSavedObjects}
+              onQueryChange={this.onQueryChange}
+              onTableChange={this.onTableChange}
+              filters={filters}
+              onExport={this.onExport}
+              canDelete={applications.capabilities.savedObjectsManagement.delete as boolean}
+              onDelete={this.onDelete}
+              onActionRefresh={this.refreshObject}
+              goInspectObject={this.props.goInspectObject}
+              pageIndex={page}
+              pageSize={perPage}
+              items={savedObjects}
+              totalItemCount={filteredItemCount}
+              isSearching={isSearching}
+              onShowRelationships={this.onShowRelationships}
+              canGoInApp={this.props.canGoInApp}
+              dateFormat={this.props.dateFormat}
+              query={this.state.activeQuery}
+            />
+          </RedirectAppLinks>
+        </EuiPageContent>
+      </div>
     );
   }
 }

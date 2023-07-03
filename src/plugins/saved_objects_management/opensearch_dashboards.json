@@ -6,5 +6,5 @@
   "requiredPlugins": ["management", "data"],
   "optionalPlugins": ["dashboard", "visualizations", "discover", "home", "visBuilder"],
   "extraPublicDirs": ["public/lib"],
-  "requiredBundles": ["opensearchDashboardsReact", "home"]
+  "requiredBundles": ["opensearchDashboardsReact", "home", "opensearchDashboardsUtils"]
 }
