@@ -93,17 +93,17 @@ export type HttpStart = HttpSetup;
  */
 export interface IBasePath {
   /**
-   * Gets the `basePath` string.
+   * Gets the `basePath + workspace` string.
    */
   get: () => string;
 
   /**
-   * Prepends `path` with the basePath.
+   * Prepends `path` with the basePath + workspace.
    */
   prepend: (url: string) => string;
 
   /**
-   * Removes the prepended basePath from the `path`.
+   * Removes the prepended basePath + workspace from the `path`.
    */
   remove: (url: string) => string;
 

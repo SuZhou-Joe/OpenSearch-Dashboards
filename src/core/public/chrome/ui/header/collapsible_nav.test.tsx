@@ -80,8 +80,11 @@ function mockProps() {
     closeNav: () => {},
     navigateToApp: () => Promise.resolve(),
     navigateToUrl: () => Promise.resolve(),
+    exitWorkspace: () => {},
+    getWorkspaceUrl: (id: string) => '',
     customNavLink$: new BehaviorSubject(undefined),
     currentWorkspace$: workspacesServiceMock.createStartContract().client.currentWorkspace$,
+    workspaceList$: workspacesServiceMock.createStartContract().client.workspaceList$,
     branding: {
       darkMode: false,
       mark: {
@@ -167,7 +170,7 @@ describe('CollapsibleNav', () => {
         recentlyAccessed$={new BehaviorSubject(recentNavLinks)}
       />
     );
-    expectShownNavLinksCount(component, 3);
+    expectShownNavLinksCount(component, 0);
     clickGroup(component, 'opensearchDashboards');
     clickGroup(component, 'recentlyViewed');
     expectShownNavLinksCount(component, 1);
