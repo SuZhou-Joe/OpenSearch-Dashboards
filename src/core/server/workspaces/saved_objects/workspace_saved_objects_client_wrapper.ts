@@ -187,6 +187,9 @@ export class WorkspaceSavedObjectsClientWrapper {
     const findWithWorkspacePermissionControl = async <T = unknown>(
       options: SavedObjectsFindOptions
     ) => {
+      if (options.type === WORKSPACE_TYPE) {
+        return await wrapperOptions.client.find<T>(options);
+      }
       if (options.workspaces) {
         options.workspaces = options.workspaces.filter(
           async (workspaceId) =>
