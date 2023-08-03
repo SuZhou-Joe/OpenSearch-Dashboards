@@ -38,4 +38,10 @@ export {
 } from './context';
 export { DEFAULT_APP_CATEGORIES } from './default_app_categories';
 export { DEFAULT_WORKSPACE_TEMPLATES } from './default_workspace_templates';
-export { WORKSPACE_PATH_PREFIX, PermissionMode, PUBLIC_WORKSPACE } from './constants';
+export {
+  WORKSPACE_PATH_PREFIX,
+  PermissionMode,
+  PUBLIC_WORKSPACE,
+  WORKSPACE_FEATURE_FLAG_KEY_IN_UI_SETTINGS,
+  MANAGEMENT_WORKSPACE,
+} from './constants';

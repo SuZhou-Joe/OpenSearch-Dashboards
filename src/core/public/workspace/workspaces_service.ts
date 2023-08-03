@@ -7,6 +7,7 @@ import { WorkspacesClient, WorkspacesClientContract } from './workspaces_client'
 import type { WorkspaceAttribute } from '../../server/types';
 import { HttpSetup } from '../http';
 import { IUiSettingsClient } from '../ui_settings';
+import { WORKSPACE_FEATURE_FLAG_KEY_IN_UI_SETTINGS } from '../../utils';
 
 /**
  * @public
@@ -31,7 +32,7 @@ export class WorkspacesService implements CoreService<WorkspacesSetup, Workspace
     this.client = new WorkspacesClient(http);
 
     // If workspace was disabled while opening a workspace url, navigate to basePath
-    if (uiSettings.get('workspace:enabled') === true) {
+    if (uiSettings.get(WORKSPACE_FEATURE_FLAG_KEY_IN_UI_SETTINGS) === true) {
       this.client.init();
     }
 
