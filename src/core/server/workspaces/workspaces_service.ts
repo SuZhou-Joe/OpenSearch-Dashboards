@@ -11,18 +11,13 @@ import { registerRoutes } from './routes';
 import {
   ISavedObjectsRepository,
   InternalSavedObjectsServiceSetup,
-  SavedObjectsClient,
   SavedObjectsServiceStart,
 } from '../saved_objects';
 import { IWorkspaceDBImpl, WorkspaceAttribute } from './types';
 import { WorkspacesClientWithSavedObject } from './workspaces_client';
 import { WorkspaceSavedObjectsClientWrapper } from './saved_objects';
 import { WORKSPACE_TYPE } from './constants';
-import {
-  MANAGEMENT_WORKSPACE,
-  PUBLIC_WORKSPACE,
-  WORKSPACE_FEATURE_FLAG_KEY_IN_UI_SETTINGS,
-} from '../../utils';
+import { MANAGEMENT_WORKSPACE, PUBLIC_WORKSPACE } from '../../utils';
 import { UiSettingsServiceStart } from '../ui_settings';
 
 export interface WorkspacesServiceSetup {
@@ -127,31 +122,23 @@ export class WorkspacesService
     }
   }
 
-  private async listenToUISettingsChange(startDeps: WorkpsaceStartDeps) {
+  private async setupWorkspaces(startDeps: WorkpsaceStartDeps) {
     const internalRepository = startDeps.savedObjects.createInternalRepository();
-    const internalSavedObjectsClient = new SavedObjectsClient(internalRepository);
-    const uiSettingsClient = startDeps.uiSettings.asScopedToClient(internalSavedObjectsClient);
-    const featureFlag = await uiSettingsClient.get(WORKSPACE_FEATURE_FLAG_KEY_IN_UI_SETTINGS);
 
-    if (featureFlag) {
-      this.logger.debug(
-        'Workspace feature flag is open, start to check if we need to create inherent workspaces'
-      );
-      await Promise.all([
-        this.checkAndCreateWorkspace(internalRepository, PUBLIC_WORKSPACE, {
-          name: 'public',
-        }),
-        this.checkAndCreateWorkspace(internalRepository, MANAGEMENT_WORKSPACE, {
-          name: 'Management',
-        }),
-      ]);
-    }
+    await Promise.all([
+      this.checkAndCreateWorkspace(internalRepository, PUBLIC_WORKSPACE, {
+        name: 'public',
+      }),
+      this.checkAndCreateWorkspace(internalRepository, MANAGEMENT_WORKSPACE, {
+        name: 'Management',
+      }),
+    ]);
   }
 
   public async start(startDeps: WorkpsaceStartDeps): Promise<InternalWorkspacesServiceStart> {
     this.logger.debug('Starting SavedObjects service');
 
-    this.listenToUISettingsChange(startDeps);
+    this.setupWorkspaces(startDeps);
 
     return {
       client: this.client as IWorkspaceDBImpl,
