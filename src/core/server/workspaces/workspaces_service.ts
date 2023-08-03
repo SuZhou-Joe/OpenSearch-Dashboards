@@ -8,10 +8,12 @@ import { CoreContext } from '../core_context';
 import { InternalHttpServiceSetup } from '../http';
 import { Logger } from '../logging';
 import { registerRoutes } from './routes';
-import { InternalSavedObjectsServiceSetup } from '../saved_objects';
-import { IWorkspaceDBImpl } from './types';
+import { InternalSavedObjectsServiceSetup, SavedObjectsServiceStart } from '../saved_objects';
+import { IWorkspaceDBImpl, WorkspaceAttribute } from './types';
 import { WorkspacesClientWithSavedObject } from './workspaces_client';
 import { WorkspaceSavedObjectsClientWrapper } from './saved_objects';
+import { WORKSPACE_TYPE } from './constants';
+import { PUBLIC_WORKSPACE } from '../../utils';
 
 export interface WorkspacesServiceSetup {
   client: IWorkspaceDBImpl;
@@ -24,6 +26,10 @@ export interface WorkspacesServiceStart {
 export interface WorkspacesSetupDeps {
   http: InternalHttpServiceSetup;
   savedObject: InternalSavedObjectsServiceSetup;
+}
+
+export interface WorkpsaceStartDeps {
+  savedObjects: SavedObjectsServiceStart;
 }
 
 export type InternalWorkspacesServiceSetup = WorkspacesServiceSetup;
@@ -84,8 +90,35 @@ export class WorkspacesService
     };
   }
 
-  public async start(): Promise<InternalWorkspacesServiceStart> {
+  public async start(startDeps: WorkpsaceStartDeps): Promise<InternalWorkspacesServiceStart> {
     this.logger.debug('Starting SavedObjects service');
+    /**
+     * Internal repository is attached to global tenant.
+     */
+    const internalRepository = startDeps.savedObjects.createInternalRepository();
+
+    try {
+      await internalRepository.get(WORKSPACE_TYPE, PUBLIC_WORKSPACE);
+    } catch (error) {
+      this.logger.debug(error?.toString() || '');
+      this.logger.info('No public workspace found, create it by using internal user');
+      try {
+        const createResult = await internalRepository.create(
+          WORKSPACE_TYPE,
+          {
+            name: 'public',
+          } as Omit<WorkspaceAttribute, 'id'>,
+          {
+            id: PUBLIC_WORKSPACE,
+          }
+        );
+        if (createResult.id) {
+          this.logger.info(`Created workspace ${createResult.id} in global tenant.`);
+        }
+      } catch (e) {
+        this.logger.error(`Create public workspace error: ${e?.toString() || ''}`);
+      }
+    }
 
     return {
       client: this.client as IWorkspaceDBImpl,
