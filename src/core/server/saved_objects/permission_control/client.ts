@@ -9,6 +9,7 @@ import { SavedObjectsServiceStart } from '../saved_objects_service';
 import { SavedObjectsBulkGetObject } from '../service';
 import { ACL, Principals, TransformedPermission, PrincipalType } from './acl';
 import { WORKSPACE_TYPE } from '../constants';
+import { SavedObject } from '../types';
 
 export type SavedObjectsPermissionControlContract = Pick<
   SavedObjectsPermissionControl,
@@ -76,6 +77,27 @@ export class SavedObjectsPermissionControl {
   /**
    * In batch validate case, the logic is a.withPermission && b.withPermission
    * @param request
+   * @param savedObjectsGet
+   * @param permissionModes
+   * @returns
+   */
+  public batchValidateInmemory(
+    request: OpenSearchDashboardsRequest,
+    savedObjectsGet: SavedObject[],
+    permissionModes: SavedObjectsPermissionModes
+  ) {
+    const principals = this.getPrincipalsFromRequest(request);
+    const hasAllPermission = savedObjectsGet.every((item) => {
+      // item.permissions
+      const aclInstance = new ACL(item.permissions);
+      return aclInstance.hasPermission(permissionModes, principals);
+    });
+    return hasAllPermission;
+  }
+
+  /**
+   * In batch validate case, the logic is a.withPermission && b.withPermission
+   * @param request
    * @param savedObjects
    * @param permissionModes
    * @returns
@@ -86,16 +108,11 @@ export class SavedObjectsPermissionControl {
     permissionModes: SavedObjectsPermissionModes
   ) {
     const savedObjectsGet = await this.bulkGetSavedObjects(request, savedObjects);
-    if (savedObjectsGet) {
-      const principals = this.getPrincipalsFromRequest(request);
-      const hasAllPermission = savedObjectsGet.every((item) => {
-        // item.permissions
-        const aclInstance = new ACL(item.permissions);
-        return aclInstance.hasPermission(permissionModes, principals);
-      });
+    if (savedObjectsGet && savedObjectsGet.length) {
+      const result = this.batchValidateInmemory(request, savedObjectsGet, permissionModes);
       return {
         success: true,
-        result: hasAllPermission,
+        result,
       };
     }
 
