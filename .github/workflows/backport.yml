@@ -7,7 +7,7 @@ on:
 
 jobs:
   backport:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-set-suzhou
     permissions:
       contents: write
       pull-requests: write
