@@ -20,6 +20,7 @@ import {
   SavedObjectsClient,
   WorkspaceAttribute,
   DEFAULT_APP_CATEGORIES,
+  ensureRawRequest,
 } from '../../../core/server';
 import { IWorkspaceDBImpl } from './types';
 import { WorkspaceClientWithSavedObject } from './workspace_client';
@@ -36,6 +37,11 @@ import {
   SavedObjectsPermissionControlContract,
 } from './permission_control/client';
 import { registerPermissionCheckRoutes } from './permission_control/routes';
+export interface PluginsStates {
+  workspace?: {
+    redirectUrl?: string;
+  };
+}
 
 export class WorkspacePlugin implements Plugin<{}, {}> {
   private readonly logger: Logger;
@@ -54,6 +60,10 @@ export class WorkspacePlugin implements Plugin<{}, {}> {
       if (matchedResult) {
         const requestUrl = new URL(request.url.toString());
         requestUrl.pathname = requestUrl.pathname.replace(regexp, '');
+        const rawRequest = ensureRawRequest(request);
+        (rawRequest.plugins as PluginsStates).workspace = {
+          redirectUrl: request.url.toString(),
+        };
         return toolkit.rewriteUrl(requestUrl.toString());
       }
       return toolkit.next();
