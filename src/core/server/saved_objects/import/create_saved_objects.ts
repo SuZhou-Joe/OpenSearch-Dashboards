@@ -41,6 +41,7 @@ interface CreateSavedObjectsParams<T> {
   overwrite?: boolean;
   dataSourceId?: string;
   dataSourceTitle?: string;
+  workspaces?: string[];
 }
 interface CreateSavedObjectsResult<T> {
   createdObjects: Array<CreatedObject<T>>;
@@ -60,6 +61,7 @@ export const createSavedObjects = async <T>({
   overwrite,
   dataSourceId,
   dataSourceTitle,
+  workspaces,
 }: CreateSavedObjectsParams<T>): Promise<CreateSavedObjectsResult<T>> => {
   // filter out any objects that resulted in errors
   const errorSet = accumulatedErrors.reduce(
@@ -169,6 +171,7 @@ export const createSavedObjects = async <T>({
     const bulkCreateResponse = await savedObjectsClient.bulkCreate(objectsToCreate, {
       namespace,
       overwrite,
+      workspaces,
     });
     expectedResults = bulkCreateResponse.saved_objects;
   }
@@ -176,7 +179,7 @@ export const createSavedObjects = async <T>({
   // remap results to reflect the object IDs that were submitted for import
   // this ensures that consumers understand the results
   const remappedResults = expectedResults.map<CreatedObject<T>>((result) => {
-    const { id } = objectIdMap.get(`${result.type}:${result.id}`)!;
+    const { id } = objectIdMap.get(`${result.type}:${result.id}`) || ({} as SavedObject<T>);
     // also, include a `destinationId` field if the object create attempt was made with a different ID
     return { ...result, id, ...(id !== result.id && { destinationId: result.id }) };
   });
