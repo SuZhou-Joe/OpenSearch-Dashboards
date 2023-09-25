@@ -144,7 +144,7 @@ export async function importSavedObjectsFromStream({
     namespace,
     dataSourceId,
     dataSourceTitle,
-    workspaces,
+    ...(workspaces ? { workspaces } : {}),
   };
   const createSavedObjectsResult = await createSavedObjects(createSavedObjectsParams);
   errorAccumulator = [...errorAccumulator, ...createSavedObjectsResult.errors];
