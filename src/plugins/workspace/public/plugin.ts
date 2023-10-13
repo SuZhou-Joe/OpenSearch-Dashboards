@@ -45,7 +45,6 @@ export class WorkspacePlugin implements Plugin<{}, {}, WorkspacePluginSetupDeps>
   }
   public async setup(core: CoreSetup, { savedObjectsManagement }: WorkspacePluginSetupDeps) {
     core.chrome.registerCollapsibleNavHeader(renderWorkspaceMenu);
-
     const workspaceClient = new WorkspaceClient(core.http, core.workspaces);
     await workspaceClient.init();
 
