@@ -78,7 +78,9 @@ export async function importSavedObjectsFromStream({
   const validateReferencesResult = await validateReferences(
     collectSavedObjectsResult.collectedObjects,
     savedObjectsClient,
-    namespace
+    namespace,
+    undefined,
+    workspaces
   );
   errorAccumulator = [...errorAccumulator, ...validateReferencesResult];
 
@@ -88,6 +90,7 @@ export async function importSavedObjectsFromStream({
   } else {
     // in check conclict and override mode
     // Check single-namespace objects for conflicts in this namespace, and check multi-namespace objects for conflicts across all namespaces
+    // Check for conflicts across all workspaces
     const checkConflictsParams = {
       objects: collectSavedObjectsResult.collectedObjects,
       savedObjectsClient,
