@@ -68,6 +68,10 @@ export interface SavedObjectsCreateOptions extends SavedObjectsBaseOptions {
    * Note: this can only be used for multi-namespace object types.
    */
   initialNamespaces?: string[];
+  /**
+   * workspaces the new created objects belong to
+   */
+  workspaces?: string[];
 }
 
 /**
@@ -91,6 +95,10 @@ export interface SavedObjectsBulkCreateObject<T = unknown> {
    * Note: this can only be used for multi-namespace object types.
    */
   initialNamespaces?: string[];
+  /**
+   * workspaces the objects belong to, will only be used when overwrite is enabled.
+   */
+  workspaces?: string[];
 }
 
 /**
@@ -363,7 +371,7 @@ export class SavedObjectsClient {
    */
   async bulkGet<T = unknown>(
     objects: SavedObjectsBulkGetObject[] = [],
-    options: SavedObjectsBaseOptions = {}
+    options: Omit<SavedObjectsBaseOptions, 'workspaces'> = {}
   ): Promise<SavedObjectsBulkResponse<T>> {
     return await this._repository.bulkGet(objects, options);
   }

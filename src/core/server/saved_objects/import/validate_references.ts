@@ -31,6 +31,7 @@
 import Boom from '@hapi/boom';
 import { SavedObject, SavedObjectsClientContract } from '../types';
 import { SavedObjectsImportError, SavedObjectsImportRetry } from './types';
+import { SavedObjectsUtils } from '../service';
 
 const REF_TYPES_TO_VLIDATE = ['index-pattern', 'search'];
 
@@ -48,7 +49,8 @@ export async function getNonExistingReferenceAsKeys(
   savedObjects: SavedObject[],
   savedObjectsClient: SavedObjectsClientContract,
   namespace?: string,
-  retries?: SavedObjectsImportRetry[]
+  retries?: SavedObjectsImportRetry[],
+  workspaces?: string[]
 ) {
   const objectsToSkip = getObjectsToSkip(retries);
   const collector = new Map();
@@ -72,8 +74,16 @@ export async function getNonExistingReferenceAsKeys(
     return [];
   }
 
+  const fields = ['id'];
+  if (workspaces?.length) {
+    fields.push('workspaces');
+  }
+
   // Fetch references to see if they exist
-  const bulkGetOpts = Array.from(collector.values()).map((obj) => ({ ...obj, fields: ['id'] }));
+  const bulkGetOpts = Array.from(collector.values()).map((obj) => ({
+    ...obj,
+    fields,
+  }));
   const bulkGetResponse = await savedObjectsClient.bulkGet(bulkGetOpts, { namespace });
 
   // Error handling
@@ -93,6 +103,20 @@ export async function getNonExistingReferenceAsKeys(
     if (savedObject.error) {
       continue;
     }
+    /**
+     * If original workspaces have conflict with target workspace
+     * make it as NonExistingReference
+     */
+    if (workspaces) {
+      if (
+        SavedObjectsUtils.filterWorkspacesAccordingToSourceWorkspaces(
+          workspaces,
+          savedObject.workspaces
+        ).length
+      ) {
+        continue;
+      }
+    }
     collector.delete(`${savedObject.type}:${savedObject.id}`);
   }
 
@@ -103,7 +127,8 @@ export async function validateReferences(
   savedObjects: Array<SavedObject<{ title?: string }>>,
   savedObjectsClient: SavedObjectsClientContract,
   namespace?: string,
-  retries?: SavedObjectsImportRetry[]
+  retries?: SavedObjectsImportRetry[],
+  workspaces?: string[]
 ) {
   const objectsToSkip = getObjectsToSkip(retries);
   const errorMap: { [key: string]: SavedObjectsImportError } = {};
@@ -111,7 +136,8 @@ export async function validateReferences(
     savedObjects,
     savedObjectsClient,
     namespace,
-    retries
+    retries,
+    workspaces
   );
 
   // Filter out objects with missing references, add to error object

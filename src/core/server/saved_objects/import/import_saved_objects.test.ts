@@ -165,7 +165,9 @@ describe('#importSavedObjectsFromStream', () => {
       expect(validateReferences).toHaveBeenCalledWith(
         collectedObjects,
         savedObjectsClient,
-        namespace
+        namespace,
+        undefined,
+        undefined
       );
     });
 
@@ -265,6 +267,52 @@ describe('#importSavedObjectsFromStream', () => {
           importIdMap,
           overwrite,
           namespace,
+        };
+        expect(createSavedObjects).toHaveBeenCalledWith(createSavedObjectsParams);
+      });
+
+      test('creates saved objects when workspaces param is provided', async () => {
+        const options = setupOptions();
+        options.workspaces = ['foo'];
+        const collectedObjects = [createObject()];
+        const filteredObjects = [createObject()];
+        const errors = [createError(), createError(), createError(), createError()];
+        getMockFn(collectSavedObjects).mockResolvedValue({
+          errors: [errors[0]],
+          collectedObjects,
+          importIdMap: new Map([
+            ['foo', {}],
+            ['bar', {}],
+            ['baz', {}],
+          ]),
+        });
+        getMockFn(validateReferences).mockResolvedValue([errors[1]]);
+        getMockFn(checkConflicts).mockResolvedValue({
+          errors: [errors[2]],
+          filteredObjects,
+          importIdMap: new Map([['bar', { id: 'newId1' }]]),
+          pendingOverwrites: new Set(),
+        });
+        getMockFn(checkOriginConflicts).mockResolvedValue({
+          errors: [errors[3]],
+          importIdMap: new Map([['baz', { id: 'newId2' }]]),
+          pendingOverwrites: new Set(),
+        });
+
+        await importSavedObjectsFromStream(options);
+        const importIdMap = new Map([
+          ['foo', {}],
+          ['bar', { id: 'newId1' }],
+          ['baz', { id: 'newId2' }],
+        ]);
+        const createSavedObjectsParams = {
+          objects: collectedObjects,
+          accumulatedErrors: errors,
+          savedObjectsClient,
+          importIdMap,
+          overwrite,
+          namespace,
+          workspaces: options.workspaces,
         };
         expect(createSavedObjects).toHaveBeenCalledWith(createSavedObjectsParams);
       });
