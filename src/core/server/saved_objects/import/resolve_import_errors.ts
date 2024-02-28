@@ -59,6 +59,7 @@ export async function resolveSavedObjectsImportErrors({
   typeRegistry,
   namespace,
   createNewCopies,
+  workspaces,
   dataSourceId,
   dataSourceTitle,
 }: SavedObjectsResolveImportErrorsOptions): Promise<SavedObjectsImportResponse> {
@@ -129,6 +130,7 @@ export async function resolveSavedObjectsImportErrors({
     namespace,
     retries,
     createNewCopies,
+    workspaces,
     dataSourceId,
   };
   const checkConflictsResult = await checkConflicts(checkConflictsParams);
@@ -161,6 +163,7 @@ export async function resolveSavedObjectsImportErrors({
       importIdMap,
       namespace,
       overwrite,
+      workspaces,
       dataSourceId,
       dataSourceTitle,
     };
