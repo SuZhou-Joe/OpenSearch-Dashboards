@@ -55,9 +55,9 @@ export async function importSavedObjectsFromStream({
   savedObjectsClient,
   typeRegistry,
   namespace,
-  workspaces,
   dataSourceId,
   dataSourceTitle,
+  workspaces,
 }: SavedObjectsImportOptions): Promise<SavedObjectsImportResponse> {
   let errorAccumulator: SavedObjectsImportError[] = [];
   const supportedTypes = typeRegistry.getImportableAndExportableTypes().map((type) => type.name);
@@ -152,6 +152,7 @@ export async function importSavedObjectsFromStream({
     ...(workspaces ? { workspaces } : {}),
     dataSourceId,
     dataSourceTitle,
+    ...(workspaces ? { workspaces } : {}),
   };
   const createSavedObjectsResult = await createSavedObjects(createSavedObjectsParams);
   errorAccumulator = [...errorAccumulator, ...createSavedObjectsResult.errors];
