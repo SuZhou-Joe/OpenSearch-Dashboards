@@ -10,7 +10,7 @@ import { getStateFromOsdUrl } from '../../opensearch_dashboards_utils/public';
 import { formatUrlWithWorkspaceId } from './utils';
 import { WORKSPACE_ID_STATE_KEY } from '../common/constants';
 
-export class WorkspacePlugin implements Plugin<{}, {}> {
+export class WorkspacePlugin implements Plugin<{}, {}, {}> {
   private core?: CoreSetup;
   private URLChange$ = new BehaviorSubject('');
   private getWorkpsaceIdFromURL(): string | null {
