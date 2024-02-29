@@ -4,6 +4,8 @@
  */
 
 import { AppCategory } from '../../../core/public';
+import { setStateToOsdUrl } from '../../opensearch_dashboards_utils/public';
+import { WORKSPACE_ID_STATE_KEY } from '../common/constants';
 
 /**
  * Given a list of feature config, check if a feature matches config
@@ -53,4 +55,8 @@ export const featureMatchesConfig = (featureConfigs: string[]) => ({
   }
 
   return matched;
+};
+
+export const formatUrlWithWorkspaceId = (url: string, workspaceId: string) => {
+  return setStateToOsdUrl(WORKSPACE_ID_STATE_KEY, workspaceId, undefined, url);
 };

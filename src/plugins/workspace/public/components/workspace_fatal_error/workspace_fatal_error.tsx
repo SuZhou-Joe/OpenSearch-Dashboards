@@ -13,20 +13,15 @@ import {
 } from '@elastic/eui';
 import React from 'react';
 import { FormattedMessage } from '@osd/i18n/react';
-import { IBasePath } from 'opensearch-dashboards/public';
 import { useOpenSearchDashboards } from '../../../../opensearch_dashboards_react/public';
-import { formatUrlWithWorkspaceId } from '../../../../../core/public/utils';
+import { formatUrlWithWorkspaceId } from '../../utils';
 
 export function WorkspaceFatalError(props: { error?: string }) {
   const {
-    services: { application, http },
+    services: { application },
   } = useOpenSearchDashboards();
   const goBackToHome = () => {
-    window.location.href = formatUrlWithWorkspaceId(
-      application?.getUrlForApp('home') || '',
-      '',
-      http?.basePath as IBasePath
-    );
+    window.location.href = formatUrlWithWorkspaceId(application?.getUrlForApp('home') || '', '');
   };
   return (
     <EuiPage style={{ minHeight: '100vh' }}>

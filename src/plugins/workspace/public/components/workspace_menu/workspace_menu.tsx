@@ -29,7 +29,7 @@ import {
   WORKSPACE_LIST_APP_ID,
   WORKSPACE_OVERVIEW_APP_ID,
 } from '../../../common/constants';
-import { formatUrlWithWorkspaceId } from '../../../../../core/public/utils';
+import { formatUrlWithWorkspaceId } from '../../utils';
 import { cleanWorkspaceId } from '../../../../../core/public';
 
 interface Props {
@@ -86,8 +86,7 @@ export const WorkspaceMenu = ({ basePath, getUrlForApp, workspaces, navigateToUr
       getUrlForApp(WORKSPACE_OVERVIEW_APP_ID, {
         absolute: false,
       }),
-      workspace.id,
-      basePath
+      workspace.id
     );
     const name =
       currentWorkspace !== null && index === 0 ? (
@@ -206,8 +205,7 @@ export const WorkspaceMenu = ({ basePath, getUrlForApp, workspaces, navigateToUr
             getUrlForApp(WORKSPACE_OVERVIEW_APP_ID, {
               absolute: false,
             }),
-            MANAGEMENT_WORKSPACE_ID,
-            basePath
+            MANAGEMENT_WORKSPACE_ID
           ),
         },
       ],

@@ -5,30 +5,28 @@
 
 import { WORKSPACE_OVERVIEW_APP_ID, WORKSPACE_UPDATE_APP_ID } from '../../../common/constants';
 import { CoreStart } from '../../../../../core/public';
-import { formatUrlWithWorkspaceId } from '../../../../../core/public/utils';
+import { formatUrlWithWorkspaceId } from '../../utils';
 
 type Core = Pick<CoreStart, 'application' | 'http'>;
 
-export const switchWorkspace = ({ application, http }: Core, id: string) => {
+export const switchWorkspace = ({ application }: Core, id: string) => {
   const newUrl = formatUrlWithWorkspaceId(
     application.getUrlForApp(WORKSPACE_OVERVIEW_APP_ID, {
       absolute: true,
     }),
-    id,
-    http.basePath
+    id
   );
   if (newUrl) {
     window.location.href = newUrl;
   }
 };
 
-export const updateWorkspace = ({ application, http }: Core, id: string) => {
+export const updateWorkspace = ({ application }: Core, id: string) => {
   const newUrl = formatUrlWithWorkspaceId(
     application.getUrlForApp(WORKSPACE_UPDATE_APP_ID, {
       absolute: true,
     }),
-    id,
-    http.basePath
+    id
   );
   if (newUrl) {
     window.location.href = newUrl;

@@ -5,8 +5,9 @@
 
 import { i18n } from '@osd/i18n';
 import type { Subscription } from 'rxjs';
-import { combineLatest } from 'rxjs';
+import { BehaviorSubject, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { debounce } from 'lodash';
 import {
   AppMountParameters,
   AppNavLinkStatus,
@@ -31,6 +32,9 @@ import { WorkspaceClient } from './workspace_client';
 import { renderWorkspaceMenu } from './render_workspace_menu';
 import { Services } from './types';
 import { featureMatchesConfig } from './utils';
+import { getStateFromOsdUrl } from '../../opensearch_dashboards_utils/public';
+import { formatUrlWithWorkspaceId } from './utils';
+import { WORKSPACE_ID_STATE_KEY } from '../common/constants';
 
 interface WorkspacePluginSetupDeps {
   savedObjectsManagement?: SavedObjectsManagementPluginSetup;
@@ -166,6 +170,25 @@ export class WorkspacePlugin implements Plugin<{}, {}, WorkspacePluginSetupDeps>
       },
     });
 
+    /**
+     * listen to application change and patch workspace id in hash
+     */
+    this.listenToApplicationChange();
+
+    /**
+     * listen to application internal hash change and patch workspace id in hash
+     */
+    this.listenToHashChange();
+
+    /**
+     * All the URLChange will flush in this subscriber
+     */
+    this.URLChange$.subscribe(
+      debounce(async (url) => {
+        history.replaceState(history.state, '', url);
+      }, 500)
+    );
+
     return {};
   }
 
@@ -178,7 +201,56 @@ export class WorkspacePlugin implements Plugin<{}, {}, WorkspacePluginSetupDeps>
       });
     }
   }
+  private core?: CoreSetup;
+  private URLChange$ = new BehaviorSubject('');
+  private getWorkpsaceIdFromURL(): string | null {
+    return getStateFromOsdUrl(WORKSPACE_ID_STATE_KEY);
+  }
+  private async getWorkpsaceId(): Promise<string> {
+    if (this.getWorkpsaceIdFromURL()) {
+      return this.getWorkpsaceIdFromURL() || '';
+    }
 
+    return (await this.core?.workspaces.currentWorkspaceId$.getValue()) || '';
+  }
+  private getPatchedUrl = (url: string, workspaceId: string) => {
+    return formatUrlWithWorkspaceId(url, workspaceId);
+  };
+  private async listenToHashChange(): Promise<void> {
+    window.addEventListener('hashchange', async () => {
+      if (this.shouldPatchUrl()) {
+        const workspaceId = await this.getWorkpsaceId();
+        this.URLChange$.next(this.getPatchedUrl(window.location.href, workspaceId));
+      }
+    });
+  }
+  private shouldPatchUrl(): boolean {
+    const currentWorkspaceId = this.core?.workspaces.currentWorkspaceId$.getValue();
+    const workspaceIdFromURL = this.getWorkpsaceIdFromURL();
+    if (!currentWorkspaceId && !workspaceIdFromURL) {
+      return false;
+    }
+
+    if (currentWorkspaceId === workspaceIdFromURL) {
+      return false;
+    }
+
+    return true;
+  }
+  private async listenToApplicationChange(): Promise<void> {
+    const startService = await this.core?.getStartServices();
+    if (startService) {
+      combineLatest([
+        this.core?.workspaces.currentWorkspaceId$,
+        startService[0].application.currentAppId$,
+      ]).subscribe(async ([]) => {
+        if (this.shouldPatchUrl()) {
+          const currentWorkspaceId = await this.getWorkpsaceId();
+          this.URLChange$.next(this.getPatchedUrl(window.location.href, currentWorkspaceId));
+        }
+      });
+    }
+  }
   private filterByWorkspace(workspace: WorkspaceObject | null, allNavLinks: ChromeNavLink[]) {
     if (!workspace) return allNavLinks;
     const features = workspace.features ?? ['*'];

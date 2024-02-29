@@ -18,6 +18,7 @@ export const PATHS = {
 };
 export const WORKSPACE_OP_TYPE_CREATE = 'create';
 export const WORKSPACE_OP_TYPE_UPDATE = 'update';
+export const WORKSPACE_ID_STATE_KEY = '_w';
 export const WORKSPACE_SAVED_OBJECTS_CLIENT_WRAPPER_ID = 'workspace';
 export const WORKSPACE_CONFLICT_CONTROL_SAVED_OBJECTS_CLIENT_WRAPPER_ID =
   'workspace_conflict_control';

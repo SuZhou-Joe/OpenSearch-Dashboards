@@ -34,7 +34,6 @@ export { MountWrapper, mountReactNode } from './mount';
 export {
   WORKSPACE_PATH_PREFIX,
   WORKSPACE_TYPE,
-  formatUrlWithWorkspaceId,
   getWorkspaceIdFromUrl,
   PUBLIC_WORKSPACE_ID,
   MANAGEMENT_WORKSPACE_ID,
