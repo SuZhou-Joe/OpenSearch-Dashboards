@@ -53,7 +53,19 @@ export const resolveCapabilities = async (
   request: OpenSearchDashboardsRequest,
   applications: string[]
 ): Promise<Capabilities> => {
-  const mergedCaps = cloneDeep({
+  const mergedCaps = resolveStaticCapabilities(capabilities, applications);
+  return switchers.reduce(async (caps, switcher) => {
+    const resolvedCaps = await caps;
+    const changes = await switcher(request, resolvedCaps);
+    return recursiveApplyChanges(resolvedCaps, changes);
+  }, Promise.resolve(mergedCaps));
+};
+
+export const resolveStaticCapabilities = async (
+  capabilities: Capabilities,
+  applications: string[]
+): Promise<Capabilities> => {
+  return cloneDeep({
     ...capabilities,
     navLinks: applications.reduce(
       (acc, app) => ({
@@ -63,11 +75,6 @@ export const resolveCapabilities = async (
       capabilities.navLinks
     ),
   });
-  return switchers.reduce(async (caps, switcher) => {
-    const resolvedCaps = await caps;
-    const changes = await switcher(request, resolvedCaps);
-    return recursiveApplyChanges(resolvedCaps, changes);
-  }, Promise.resolve(mergedCaps));
 };
 
 function recursiveApplyChanges<

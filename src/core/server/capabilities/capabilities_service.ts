@@ -33,7 +33,11 @@ import { CoreContext } from '../core_context';
 import { Logger } from '../logging';
 import { InternalHttpServiceSetup, OpenSearchDashboardsRequest } from '../http';
 import { mergeCapabilities } from './merge_capabilities';
-import { getCapabilitiesResolver, CapabilitiesResolver } from './resolve_capabilities';
+import {
+  getCapabilitiesResolver,
+  CapabilitiesResolver,
+  resolveStaticCapabilities,
+} from './resolve_capabilities';
 import { registerRoutes } from './routes';
 
 /**
@@ -113,6 +117,10 @@ export interface CapabilitiesStart {
    * Resolve the {@link Capabilities} to be used for given request
    */
   resolveCapabilities(request: OpenSearchDashboardsRequest): Promise<Capabilities>;
+  /**
+   * Resolve the static {@link Capabilities}
+   */
+  resolveStaticCapabilities(): Promise<Capabilities>;
 }
 
 interface SetupDeps {
@@ -163,6 +171,14 @@ export class CapabilitiesService {
   public start(): CapabilitiesStart {
     return {
       resolveCapabilities: (request) => this.resolveCapabilities(request, []),
+      resolveStaticCapabilities: () =>
+        resolveStaticCapabilities(
+          mergeCapabilities(
+            defaultCapabilities,
+            ...this.capabilitiesProviders.map((provider) => provider())
+          ),
+          []
+        ),
     };
   }
 }

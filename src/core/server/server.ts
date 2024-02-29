@@ -256,13 +256,14 @@ export class Server {
     const opensearchStart = await this.opensearch.start({
       auditTrail: auditTrailStart,
     });
+    const capabilitiesStart = this.capabilities.start();
     const soStartSpan = startTransaction?.startSpan('saved_objects.migration', 'migration');
     const savedObjectsStart = await this.savedObjects.start({
       opensearch: opensearchStart,
       pluginsInitialized: this.#pluginsInitialized,
+      capabilities: capabilitiesStart,
     });
     soStartSpan?.end();
-    const capabilitiesStart = this.capabilities.start();
     const uiSettingsStart = await this.uiSettings.start();
     const metricsStart = await this.metrics.start();
     const httpStart = this.http.getStartContract();
