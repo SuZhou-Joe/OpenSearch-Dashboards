@@ -47,9 +47,11 @@ import {
   EuiTableFieldDataColumnType,
   EuiTableActionsColumnType,
   EuiButtonIcon,
+  EuiLinkProps,
 } from '@elastic/eui';
 import { i18n } from '@osd/i18n';
 import { FormattedMessage } from '@osd/i18n/react';
+import { SyntheticEvent } from 'react';
 import { getDefaultTitle, getSavedObjectLabel } from '../../../lib';
 import { SavedObjectWithMetadata } from '../../../types';
 import {
@@ -235,17 +237,31 @@ export class Table extends PureComponent<TableProps, TableState> {
         sortable: false,
         'data-test-subj': 'savedObjectsTableRowTitle',
         render: (title: string, object: SavedObjectWithMetadata) => {
-          let { path = '' } = object.meta.inAppUrl || {};
+          const { path = '' } = object.meta.inAppUrl || {};
           const canGoInApp = this.props.canGoInApp(object);
           if (!canGoInApp) {
             return <EuiText size="s">{title || getDefaultTitle(object)}</EuiText>;
           }
+
+          const linkProps: EuiLinkProps = {};
           if (object.workspaces) {
             // first workspace login user have permission
             const [workspaceId] = object.workspaces.filter((wsId) => visibleWsIds.includes(wsId));
-            path = workspaceId ? workspaces.formatUrlWithWorkspaceId(path, workspaceId) : path;
+            if (workspaceId && workspaces.currentWorkspaceId$.getValue() !== workspaceId) {
+              /**
+               * When trying to jump to a different workspace, need a hard refresh
+               */
+              linkProps.onClick = (e: SyntheticEvent<HTMLButtonElement>) => {
+                e.preventDefault();
+                window.open(workspaces.formatUrlWithWorkspaceId(path, workspaceId), '_self');
+              };
+            }
           }
-          return <EuiLink href={path}>{title || getDefaultTitle(object)}</EuiLink>;
+
+          if (!linkProps.onClick) {
+            linkProps.href = path;
+          }
+          return <EuiLink {...linkProps}>{title || getDefaultTitle(object)}</EuiLink>;
         },
       } as EuiTableFieldDataColumnType<SavedObjectWithMetadata<any>>,
       {
