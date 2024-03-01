@@ -4,7 +4,7 @@
  */
 
 import { AppCategory } from '../../../core/public';
-import { setStateToOsdUrl } from '../../opensearch_dashboards_utils/public';
+import { setStateToOsdUrl, getStateFromOsdUrl } from '../../opensearch_dashboards_utils/public';
 import { WORKSPACE_ID_STATE_KEY } from '../common/constants';
 
 /**
@@ -57,6 +57,10 @@ export const featureMatchesConfig = (featureConfigs: string[]) => ({
   return matched;
 };
 
-export const formatUrlWithWorkspaceId = (url: string, workspaceId: string) => {
+export const formatUrlWithWorkspaceId = (url: string, workspaceId?: string) => {
   return setStateToOsdUrl(WORKSPACE_ID_STATE_KEY, workspaceId, undefined, url);
+};
+
+export const getWorkspaceIdFromUrl = (url: string): string => {
+  return getStateFromOsdUrl(WORKSPACE_ID_STATE_KEY, url) || '';
 };

@@ -27,13 +27,12 @@ import {
 } from '../common/constants';
 import { SavedObjectsManagementPluginSetup } from '../../saved_objects_management/public';
 import { getWorkspaceColumn } from './components/utils/workspace_column';
-import { getWorkspaceIdFromUrl } from '../../../core/public/utils';
 import { WorkspaceClient } from './workspace_client';
 import { renderWorkspaceMenu } from './render_workspace_menu';
 import { Services } from './types';
 import { featureMatchesConfig } from './utils';
 import { getStateFromOsdUrl } from '../../opensearch_dashboards_utils/public';
-import { formatUrlWithWorkspaceId } from './utils';
+import { formatUrlWithWorkspaceId, getWorkspaceIdFromUrl } from './utils';
 import { WORKSPACE_ID_STATE_KEY } from '../common/constants';
 
 interface WorkspacePluginSetupDeps {
@@ -41,17 +40,41 @@ interface WorkspacePluginSetupDeps {
 }
 
 export class WorkspacePlugin implements Plugin<{}, {}, WorkspacePluginSetupDeps> {
+  private core?: CoreSetup;
   private coreStart?: CoreStart;
   private currentWorkspaceSubscription?: Subscription;
+  private URLChange$ = new BehaviorSubject('');
 
   private getWorkspaceIdFromURL(): string | null {
     return getWorkspaceIdFromUrl(window.location.href);
   }
 
   public async setup(core: CoreSetup, { savedObjectsManagement }: WorkspacePluginSetupDeps) {
+    this.core = core;
+    core.workspaces.setFormatUrlWithWorkspaceId(formatUrlWithWorkspaceId);
     core.chrome.registerCollapsibleNavHeader(renderWorkspaceMenu);
     const workspaceClient = new WorkspaceClient(core.http, core.workspaces);
     await workspaceClient.init();
+
+    /**
+     * listen to application change and patch workspace id in hash
+     */
+    this.listenToApplicationChange();
+
+    /**
+     * listen to application internal hash change and patch workspace id in hash
+     */
+    this.listenToHashChange();
+
+    /**
+     * All the URLChange will flush in this subscriber
+     */
+    this.URLChange$.subscribe(
+      debounce(async (url) => {
+        history.replaceState(history.state, '', url);
+      }, 500)
+    );
+
     /**
      * Retrieve workspace id from url
      */
@@ -170,25 +193,6 @@ export class WorkspacePlugin implements Plugin<{}, {}, WorkspacePluginSetupDeps>
       },
     });
 
-    /**
-     * listen to application change and patch workspace id in hash
-     */
-    this.listenToApplicationChange();
-
-    /**
-     * listen to application internal hash change and patch workspace id in hash
-     */
-    this.listenToHashChange();
-
-    /**
-     * All the URLChange will flush in this subscriber
-     */
-    this.URLChange$.subscribe(
-      debounce(async (url) => {
-        history.replaceState(history.state, '', url);
-      }, 500)
-    );
-
     return {};
   }
 
@@ -201,8 +205,6 @@ export class WorkspacePlugin implements Plugin<{}, {}, WorkspacePluginSetupDeps>
       });
     }
   }
-  private core?: CoreSetup;
-  private URLChange$ = new BehaviorSubject('');
   private getWorkpsaceIdFromURL(): string | null {
     return getStateFromOsdUrl(WORKSPACE_ID_STATE_KEY);
   }

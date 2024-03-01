@@ -26,7 +26,6 @@ import {
 } from './permission_control/client';
 import { registerPermissionCheckRoutes } from './permission_control/routes';
 import { ConfigSchema } from '../config';
-import { cleanWorkspaceId, getWorkspaceIdFromUrl } from '../../../core/server/utils';
 import { WorkspaceConflictSavedObjectsClientWrapper } from './saved_objects/saved_objects_wrapper_for_check_workspace_conflict';
 
 export class WorkspacePlugin implements Plugin<{}, {}> {
@@ -36,22 +35,6 @@ export class WorkspacePlugin implements Plugin<{}, {}> {
   private readonly config$: Observable<ConfigSchema>;
   private workspaceSavedObjectsClientWrapper?: WorkspaceSavedObjectsClientWrapper;
   private workspaceConflictControl?: WorkspaceConflictSavedObjectsClientWrapper;
-
-  private proxyWorkspaceTrafficToRealHandler(setupDeps: CoreSetup) {
-    /**
-     * Proxy all {basePath}/w/{workspaceId}{osdPath*} paths to {basePath}{osdPath*}
-     */
-    setupDeps.http.registerOnPreRouting(async (request, response, toolkit) => {
-      const workspaceId = getWorkspaceIdFromUrl(request.url.toString());
-
-      if (workspaceId) {
-        const requestUrl = new URL(request.url.toString());
-        requestUrl.pathname = cleanWorkspaceId(requestUrl.pathname);
-        return toolkit.rewriteUrl(requestUrl.toString());
-      }
-      return toolkit.next();
-    });
-  }
 
   constructor(initializerContext: PluginInitializerContext) {
     this.logger = initializerContext.logger.get('plugins', 'workspace');
@@ -88,7 +71,6 @@ export class WorkspacePlugin implements Plugin<{}, {}> {
       );
     }
 
-    this.proxyWorkspaceTrafficToRealHandler(core);
     this.workspaceConflictControl = new WorkspaceConflictSavedObjectsClientWrapper();
 
     core.savedObjects.addClientWrapper(

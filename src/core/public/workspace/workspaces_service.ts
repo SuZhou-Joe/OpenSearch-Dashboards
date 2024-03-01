@@ -40,14 +40,22 @@ enum WORKSPACE_ERROR {
   WORKSPACE_IS_STALE = 'WORKSPACE_IS_STALE',
 }
 
-export type WorkspacesSetup = WorkspaceObservables;
-export type WorkspacesStart = WorkspaceObservables;
+type FormatUrlWithWorkspaceId = (url: string, workspaceId?: string) => string;
+
+export type WorkspacesSetup = WorkspaceObservables & {
+  setFormatUrlWithWorkspaceId: (fn: FormatUrlWithWorkspaceId) => void;
+  formatUrlWithWorkspaceId: FormatUrlWithWorkspaceId;
+};
+
+export type WorkspacesStart = WorkspaceObservables &
+  Pick<WorkspacesSetup, 'formatUrlWithWorkspaceId'>;
 
 export class WorkspacesService implements CoreService<WorkspacesSetup, WorkspacesStart> {
   private currentWorkspaceId$ = new BehaviorSubject<string>('');
   private workspaceList$ = new BehaviorSubject<WorkspaceObject[]>([]);
   private currentWorkspace$ = new BehaviorSubject<WorkspaceObject | null>(null);
   private initialized$ = new BehaviorSubject<boolean>(false);
+  private formatUrlWithWorkspaceId: FormatUrlWithWorkspaceId = (url) => url;
 
   constructor() {
     combineLatest([this.initialized$, this.workspaceList$, this.currentWorkspaceId$]).subscribe(
@@ -84,6 +92,8 @@ export class WorkspacesService implements CoreService<WorkspacesSetup, Workspace
       currentWorkspace$: this.currentWorkspace$,
       workspaceList$: this.workspaceList$,
       initialized$: this.initialized$,
+      setFormatUrlWithWorkspaceId: (fn) => (this.formatUrlWithWorkspaceId = fn),
+      formatUrlWithWorkspaceId: this.formatUrlWithWorkspaceId,
     };
   }
 
@@ -93,6 +103,7 @@ export class WorkspacesService implements CoreService<WorkspacesSetup, Workspace
       currentWorkspace$: this.currentWorkspace$,
       workspaceList$: this.workspaceList$,
       initialized$: this.initialized$,
+      formatUrlWithWorkspaceId: this.formatUrlWithWorkspaceId,
     };
   }
 

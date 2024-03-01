@@ -88,39 +88,24 @@ export interface HttpSetup {
 export type HttpStart = HttpSetup;
 
 /**
- * prepend options
- *
- * withoutWorkspace option will prepend a relative url with only basePath
- * workspaceId will rewrite the /w/{workspaceId} part, if workspace id is an empty string, prepend will remove the workspaceId part
- */
-export interface PrependOptions {
-  withoutWorkspace?: boolean;
-}
-
-/**
  * APIs for manipulating the basePath on URL segments.
  * @public
  */
 export interface IBasePath {
   /**
-   * Gets the `basePath + workspace` string.
+   * Gets the `basePath` string.
    */
   get: () => string;
 
   /**
-   * Gets the `basePath
+   * Prepends `path` with the basePath.
    */
-  getBasePath: () => string;
+  prepend: (url: string) => string;
 
   /**
-   * Prepends `path` with the basePath + workspace.
+   * Removes the prepended basePath from the `path`.
    */
-  prepend: (url: string, prependOptions?: PrependOptions) => string;
-
-  /**
-   * Removes the prepended basePath + workspace from the `path`.
-   */
-  remove: (url: string, prependOptions?: PrependOptions) => string;
+  remove: (url: string) => string;
 
   /**
    * Returns the server's root basePath as configured, without any namespace prefix.

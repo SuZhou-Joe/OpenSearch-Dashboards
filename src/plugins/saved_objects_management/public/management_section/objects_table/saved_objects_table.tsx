@@ -1000,7 +1000,7 @@ export class SavedObjectsTable extends Component<SavedObjectsTableProps, SavedOb
       workspaceEnabled,
       currentWorkspaceId: workspaceId,
     } = this.state;
-    const { http, allowedTypes, applications, namespaceRegistry } = this.props;
+    const { workspaces, allowedTypes, applications, namespaceRegistry } = this.props;
 
     const selectionConfig = {
       onSelectionChange: this.onSelectionChanged,
@@ -1107,7 +1107,7 @@ export class SavedObjectsTable extends Component<SavedObjectsTableProps, SavedOb
         <EuiSpacer size="xs" />
         <RedirectAppLinks application={applications}>
           <Table
-            basePath={http.basePath}
+            workspaces={workspaces}
             itemId={'id'}
             actionRegistry={this.props.actionRegistry}
             columnRegistry={this.props.columnRegistry}
