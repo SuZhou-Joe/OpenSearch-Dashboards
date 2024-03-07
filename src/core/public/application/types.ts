@@ -797,6 +797,12 @@ export interface ApplicationStart {
    * An observable that emits the current application id and each subsequent id update.
    */
   currentAppId$: Observable<string | undefined>;
+
+  /**
+   * The global history instance, exposed only to Core.
+   * @internal
+   */
+  history: History<unknown>;
 }
 
 /** @internal */
@@ -826,10 +832,4 @@ export interface InternalApplicationStart extends Omit<ApplicationStart, 'regist
    * @internal
    */
   currentActionMenu$: Observable<MountPoint | undefined>;
-
-  /**
-   * The global history instance, exposed only to Core.
-   * @internal
-   */
-  history: History<unknown>;
 }
