@@ -360,15 +360,28 @@ export class SavedObjectsRepository {
 
       const method = object.id && overwrite ? 'index' : 'create';
       const requiresNamespacesCheck = object.id && this._registry.isMultiNamespace(object.type);
+      /**
+       * It requires a check when overwriting objects to target workspaces
+       */
+      const requiresWorkspaceCheck = !!(object.id && options.workspaces);
 
       if (object.id == null) object.id = uuid.v1();
+
+      let opensearchRequestIndexPayload = {};
+
+      if (requiresNamespacesCheck || requiresWorkspaceCheck) {
+        opensearchRequestIndexPayload = {
+          opensearchRequestIndex: bulkGetRequestIndexCounter,
+        };
+        bulkGetRequestIndexCounter++;
+      }
 
       return {
         tag: 'Right' as 'Right',
         value: {
           method,
           object,
-          ...(requiresNamespacesCheck && { opensearchRequestIndex: bulkGetRequestIndexCounter++ }),
+          ...opensearchRequestIndexPayload,
         },
       };
     });
@@ -379,7 +392,7 @@ export class SavedObjectsRepository {
       .map(({ value: { object: { type, id } } }) => ({
         _id: this._serializer.generateRawId(namespace, type, id),
         _index: this.getIndexForType(type),
-        _source: ['type', 'namespaces'],
+        _source: ['type', 'namespaces', 'workspaces'],
       }));
     const bulkGetResponse = bulkGetDocs.length
       ? await this.client.mget(
@@ -410,7 +423,7 @@ export class SavedObjectsRepository {
       if (opensearchRequestIndex !== undefined) {
         const indexFound = bulkGetResponse?.statusCode !== 404;
         const actualResult = indexFound
-          ? bulkGetResponse?.body.docs[opensearchRequestIndex]
+          ? bulkGetResponse?.body.docs?.[opensearchRequestIndex]
           : undefined;
         const docFound = indexFound && actualResult?.found === true;
         // @ts-expect-error MultiGetHit._source is optional
@@ -562,7 +575,7 @@ export class SavedObjectsRepository {
     const bulkGetDocs = expectedBulkGetResults.filter(isRight).map(({ value: { type, id } }) => ({
       _id: this._serializer.generateRawId(namespace, type, id),
       _index: this.getIndexForType(type),
-      _source: ['type', 'namespaces'],
+      _source: ['type', 'namespaces', 'workspaces'],
     }));
     const bulkGetResponse = bulkGetDocs.length
       ? await this.client.mget(
@@ -716,9 +729,9 @@ export class SavedObjectsRepository {
   }
 
   /**
-   * Deletes all objects from the provided workspace.
+   * Deletes all objects from the provided workspace. It used when deleting a workspace.
    *
-   * @param {string} workspace - workspace id
+   * @param {string} workspace
    * @param options SavedObjectsDeleteByWorkspaceOptions
    * @returns {promise} - { took, timed_out, total, deleted, batches, version_conflicts, noops, retries, failures }
    */
@@ -799,6 +812,8 @@ export class SavedObjectsRepository {
       filter,
       preference,
       workspaces,
+      workspacesSearchOperator,
+      ACLSearchParams,
     } = options;
 
     if (!type && !typeToNamespacesMap) {
@@ -873,6 +888,8 @@ export class SavedObjectsRepository {
           hasReference,
           kueryNode,
           workspaces,
+          workspacesSearchOperator,
+          ACLSearchParams,
         }),
       },
     };
@@ -926,7 +943,7 @@ export class SavedObjectsRepository {
    */
   async bulkGet<T = unknown>(
     objects: SavedObjectsBulkGetObject[] = [],
-    options: SavedObjectsBaseOptions = {}
+    options: Omit<SavedObjectsBaseOptions, 'workspaces'> = {}
   ): Promise<SavedObjectsBulkResponse<T>> {
     const namespace = normalizeNamespace(options.namespace);
 
@@ -1014,7 +1031,7 @@ export class SavedObjectsRepository {
   async get<T = unknown>(
     type: string,
     id: string,
-    options: SavedObjectsBaseOptions = {}
+    options: Omit<SavedObjectsBaseOptions, 'workspaces'> = {}
   ): Promise<SavedObject<T>> {
     if (!this._allowedTypes.includes(type)) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundError(type, id);
@@ -1040,7 +1057,7 @@ export class SavedObjectsRepository {
       throw SavedObjectsErrorHelpers.createGenericNotFoundError(type, id);
     }
 
-    const { originId, updated_at: updatedAt, permissions } = body._source;
+    const { originId, updated_at: updatedAt, workspaces, permissions } = body._source;
 
     let namespaces: string[] = [];
     if (!this._registry.isNamespaceAgnostic(type)) {
@@ -1055,6 +1072,8 @@ export class SavedObjectsRepository {
       namespaces,
       ...(originId && { originId }),
       ...(updatedAt && { updated_at: updatedAt }),
+      ...(permissions && { permissions }),
+      ...(workspaces && { workspaces }),
       ...(permissions && { permissions }),
       version: encodeHitVersion(body),
       attributes: body._source[type],
@@ -1121,7 +1140,7 @@ export class SavedObjectsRepository {
       throw SavedObjectsErrorHelpers.createGenericNotFoundError(type, id);
     }
 
-    const { originId } = body.get?._source ?? {};
+    const { originId, workspaces } = body.get?._source ?? {};
     let namespaces: string[] = [];
     if (!this._registry.isNamespaceAgnostic(type)) {
       namespaces = body.get?._source.namespaces ?? [
@@ -1136,6 +1155,8 @@ export class SavedObjectsRepository {
       version: encodeHitVersion(body),
       namespaces,
       ...(originId && { originId }),
+      ...(permissions && { permissions }),
+      ...(workspaces && { workspaces }),
       ...(permissions && { permissions }),
       references,
       attributes,
@@ -1520,12 +1541,13 @@ export class SavedObjectsRepository {
           };
         }
 
-        const { originId } = get._source;
+        const { originId, workspaces } = get._source;
         return {
           id,
           type,
           ...(namespaces && { namespaces }),
           ...(originId && { originId }),
+          ...(workspaces && { workspaces }),
           updated_at,
           version: encodeVersion(seqNo, primaryTerm),
           attributes,

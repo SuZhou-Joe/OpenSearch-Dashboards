@@ -45,7 +45,11 @@ import { HttpFetchOptions, HttpSetup } from '../http';
 
 type SavedObjectsFindOptions = Omit<
   SavedObjectFindOptionsServer,
-  'sortOrder' | 'rootSearchFields' | 'typeToNamespacesMap'
+  | 'sortOrder'
+  | 'rootSearchFields'
+  | 'typeToNamespacesMap'
+  | 'ACLSearchParams'
+  | 'workspacesSearchOperator'
 >;
 
 type PromiseType<T extends Promise<any>> = T extends Promise<infer U> ? U : never;
@@ -307,7 +311,7 @@ export class SavedObjectsClient {
    * @returns The result of the create operation containing created saved objects.
    */
   public bulkCreate = (
-    objects: SavedObjectsBulkCreateObject[] = [],
+    objects: Array<Omit<SavedObjectsBulkCreateObject, 'workspaces'>> = [],
     options: SavedObjectsBulkCreateOptions = { overwrite: false }
   ) => {
     const path = this.getPath(['_bulk_create']);

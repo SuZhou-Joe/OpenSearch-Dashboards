@@ -67,6 +67,7 @@ import {
   ChromeStart,
   ChromeRecentlyAccessed,
   ChromeRecentlyAccessedHistoryItem,
+  LinksUpdater,
   NavType,
 } from './chrome';
 import { FatalErrorsSetup, FatalErrorsStart, FatalErrorInfo } from './fatal_errors';
@@ -104,6 +105,7 @@ export {
   StringValidation,
   StringValidationRegex,
   StringValidationRegexString,
+  WorkspaceObject,
   WorkspaceAttribute,
 } from '../types';
 
@@ -329,6 +331,7 @@ export {
   ChromeRecentlyAccessed,
   ChromeRecentlyAccessedHistoryItem,
   ChromeStart,
+  LinksUpdater,
   IContextContainer,
   HandlerFunction,
   HandlerContextType,
@@ -359,4 +362,6 @@ export { __osdBootstrap__ } from './osd_bootstrap';
 
 export { WorkspacesStart, WorkspacesSetup, WorkspacesService } from './workspace';
 
-export { WORKSPACE_TYPE } from '../utils';
+export { WORKSPACE_TYPE, cleanWorkspaceId, DEFAULT_WORKSPACE_ID } from '../utils';
+
+export { debounce } from './utils';

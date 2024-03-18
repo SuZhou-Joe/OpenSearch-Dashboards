@@ -322,6 +322,11 @@ export {
   importSavedObjectsFromStream,
   resolveSavedObjectsImportErrors,
   SavedObjectsDeleteByWorkspaceOptions,
+  ACL,
+  Principals,
+  TransformedPermission,
+  PrincipalType,
+  Permissions,
 } from './saved_objects';
 
 export {
@@ -349,7 +354,12 @@ export {
 } from './metrics';
 
 export { AppCategory, WorkspaceAttribute } from '../types';
-export { DEFAULT_APP_CATEGORIES, WORKSPACE_TYPE } from '../utils';
+export {
+  DEFAULT_APP_CATEGORIES,
+  PUBLIC_WORKSPACE_ID,
+  WORKSPACE_TYPE,
+  DEFAULT_WORKSPACE_ID,
+} from '../utils';
 
 export {
   SavedObject,
