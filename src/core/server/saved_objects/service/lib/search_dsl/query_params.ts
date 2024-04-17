@@ -309,6 +309,19 @@ export function getQueryParams({
         },
       });
     }
+  } else {
+    // If not workspaces passed, find all the objects without workspaces field
+    bool.filter.push({
+      bool: {
+        must_not: [
+          {
+            exists: {
+              field: 'workspaces',
+            },
+          },
+        ],
+      },
+    });
   }
 
   if (ACLSearchParamsShouldClause.length) {
@@ -316,16 +329,11 @@ export function getQueryParams({
       bool: {
         should: [
           /**
-           * Return those objects without workspaces field and permissions field to keep find API backward compatible
+           * Return those objects without permissions field to keep find API backward compatible
            */
           {
             bool: {
               must_not: [
-                {
-                  exists: {
-                    field: 'workspaces',
-                  },
-                },
                 {
                   exists: {
                     field: 'permissions',
