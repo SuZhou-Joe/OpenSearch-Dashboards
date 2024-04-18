@@ -36,6 +36,7 @@ import { ISavedObjectTypeRegistry } from '../../../saved_objects_type_registry';
 import { ALL_NAMESPACES_STRING, DEFAULT_NAMESPACE_STRING } from '../utils';
 import { SavedObjectsFindOptions } from '../../../types';
 import { ACL } from '../../../permission_control/acl';
+import { PUBLIC_WORKSPACE_ID } from '../../../../../../core/utils';
 
 /**
  * Gets the types based on the type. Uses mappings to support
@@ -140,6 +141,30 @@ function getClauseForWorkspace(workspace: string) {
         must: {
           match_all: {},
         },
+      },
+    };
+  }
+
+  if (workspace === PUBLIC_WORKSPACE_ID) {
+    // find objects whose workspaces contains `PUBLIC_WORKSPACE_ID`
+    // or the legacy objects(without workspaces field)
+    return {
+      bool: {
+        should: [
+          {
+            bool: {
+              must_not: [
+                {
+                  exists: {
+                    field: 'workspaces',
+                  },
+                },
+              ],
+            },
+          },
+          { term: { workspaces: workspace } },
+        ],
+        minimum_should_match: 1,
       },
     };
   }
@@ -306,23 +331,37 @@ export function getQueryParams({
         },
       });
     }
+  } else {
+    // If no workspaces, find all the objects without workspaces field
+    bool.filter.push({
+      bool: {
+        must_not: [
+          {
+            exists: {
+              field: 'workspaces',
+            },
+          },
+        ],
+      },
+    });
   }
 
   if (ACLSearchParamsShouldClause.length) {
     bool.filter.push({
       bool: {
+        should: ACLSearchParamsShouldClause,
+      },
+    });
+  } else {
+    bool.filter.push({
+      bool: {
         should: [
           /**
-           * Return those objects without workspaces field and permissions field to keep find API backward compatible
+           * Return those objects without permissions field to keep find API backward compatible
            */
           {
             bool: {
               must_not: [
-                {
-                  exists: {
-                    field: 'workspaces',
-                  },
-                },
                 {
                   exists: {
                     field: 'permissions',
@@ -331,7 +370,6 @@ export function getQueryParams({
               ],
             },
           },
-          ...ACLSearchParamsShouldClause,
         ],
       },
     });
