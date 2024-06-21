@@ -125,7 +125,6 @@ export class IndexPatternManagementPlugin
     core.application.register({
       id: IPM_APP_ID,
       title: 'index patterns',
-      group: DEFAULT_GROUPS.settings,
       mount: async (params: AppMountParameters<unknown>) => {
         const { mountManagementSection } = await import('./management_app');
         const [coreStart] = await core.getStartServices();
@@ -141,6 +140,12 @@ export class IndexPatternManagementPlugin
         );
       },
     });
+
+    core.chrome.addNavLinksToGroup(DEFAULT_GROUPS.settings, [
+      {
+        id: IPM_APP_ID,
+      },
+    ]);
 
     return this.indexPatternManagementService.setup({ httpClient: core.http });
   }

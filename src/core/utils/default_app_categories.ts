@@ -29,6 +29,7 @@
  */
 
 import { i18n } from '@osd/i18n';
+import { ChromeNavGroup } from 'opensearch-dashboards/public';
 import { AppCategory } from '../types';
 
 /** @internal */
@@ -75,47 +76,72 @@ export const DEFAULT_APP_CATEGORIES: Record<string, AppCategory> = Object.freeze
   },
 });
 
-export const DEFAULT_GROUPS: Record<string, AppCategory> = Object.freeze({
+export const DEFAULT_GROUPS: Record<string, ChromeNavGroup> = Object.freeze({
   observability: {
     id: 'observability',
-    label: i18n.translate('workspace.usecase.observability.title', {
+    title: i18n.translate('workspace.usecase.observability.title', {
       defaultMessage: 'Observability',
+    }),
+    description: i18n.translate('workspace.usecase.observability.description', {
+      defaultMessage:
+        'Gain visibility into system health, performance, and reliability through monitoring and analysis of logs, metrics, and traces.',
     }),
   },
   'security-analytics': {
     id: 'security-analytics',
-    label: i18n.translate('workspace.usecase.security.analytics.title', {
+    title: i18n.translate('workspace.usecase.security.analytics.title', {
       defaultMessage: 'Security Analytics',
+    }),
+    description: i18n.translate('workspace.usecase.analytics.description', {
+      defaultMessage:
+        'Detect and investigate potential security threats and vulnerabilities across your systems and data.',
     }),
   },
   analytics: {
     id: 'analytics',
-    label: i18n.translate('workspace.usecase.analytics.title', {
+    title: i18n.translate('workspace.usecase.analytics.title', {
       defaultMessage: 'Analytics',
+    }),
+    description: i18n.translate('workspace.usecase.analytics.description', {
+      defaultMessage:
+        'Analyze data to derive insights, identify patterns and trends, and make data-driven decisions.',
     }),
   },
   search: {
     id: 'search',
-    label: i18n.translate('workspace.usecase.search.title', {
+    title: i18n.translate('workspace.usecase.search.title', {
       defaultMessage: 'Search',
+    }),
+    description: i18n.translate('workspace.usecase.search.description', {
+      defaultMessage:
+        "Quickly find and explore relevant information across your organization's data sources.",
     }),
   },
   settings: {
     id: 'settings',
-    label: i18n.translate('nav.group.settings.label', {
+    title: i18n.translate('nav.group.settings.label', {
       defaultMessage: 'settings and setup',
+    }),
+    description: i18n.translate('nav.group.settings.description', {
+      defaultMessage: 'Setup your cluster.',
     }),
   },
   dataAdministration: {
     id: 'dataAdministration',
-    label: i18n.translate('nav.group.dataAdministration.label', {
+    title: i18n.translate('nav.group.dataAdministration.label', {
       defaultMessage: 'data administration',
+    }),
+    description: i18n.translate('nav.group.dataAdministration.description', {
+      defaultMessage: 'Manage your indexes',
     }),
   },
   devTools: {
     id: 'devTools',
-    label: i18n.translate('nav.group.devTools.label', {
+    title: i18n.translate('nav.group.devTools.label', {
       defaultMessage: 'developer tools',
+    }),
+    description: i18n.translate('nav.group.devTools.description', {
+      defaultMessage: 'Tools for developer',
     }),
   },
 });

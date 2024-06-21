@@ -95,7 +95,6 @@ export class DevToolsPlugin implements Plugin<DevToolsSetup> {
       updater$: this.appStateUpdater,
       /* the order of dev tools, it shows as last item of management section */
       order: 9070,
-      group: DEFAULT_GROUPS.devTools,
       mount: async (params: AppMountParameters) => {
         const { element, history } = params;
         element.classList.add('devAppWrapper');
@@ -106,6 +105,12 @@ export class DevToolsPlugin implements Plugin<DevToolsSetup> {
         return renderApp(core, element, history, this.getSortedDevTools(), deps);
       },
     });
+
+    coreSetup.chrome.addNavLinksToGroup(DEFAULT_GROUPS.devTools, [
+      {
+        id: this.id,
+      },
+    ]);
 
     managementOverview?.register({
       id: this.id,

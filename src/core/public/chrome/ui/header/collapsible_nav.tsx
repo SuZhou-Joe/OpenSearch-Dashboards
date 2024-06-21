@@ -52,7 +52,12 @@ import { HttpStart } from '../../../http';
 import { OnIsLockedUpdate } from './';
 import { createEuiListItem } from './nav_link';
 import type { Logos } from '../../../../common/types';
-import { CollapsibleNavHeaderRender, NavGroupItemInMap } from '../../chrome_service';
+import {
+  ChromeNavGroup,
+  ChromeRegistrationNavLink,
+  CollapsibleNavHeaderRender,
+  NavGroupItemInMap,
+} from '../../chrome_service';
 import { DEFAULT_GROUPS } from '../../../../utils';
 
 function getAllCategories(allCategorizedLinks: Record<string, ChromeNavLink[]>) {
@@ -178,6 +183,19 @@ function NavGroups({
   );
 }
 
+function fullfillRegistrationLinksToChromeNavLinks(
+  registerNavLinks: ChromeRegistrationNavLink[],
+  navLinks: ChromeNavLink[]
+): ChromeNavLink[] {
+  const allExistingNavLinkId = navLinks.map((link) => link.id);
+  return registerNavLinks
+    .filter((navLink) => allExistingNavLinkId.includes(navLink.id))
+    .map((navLink) => ({
+      ...navLinks[allExistingNavLinkId.indexOf(navLink.id)],
+      ...navLink,
+    }));
+}
+
 export function CollapsibleNav({
   basePath,
   collapsibleNavHeaderRender,
@@ -196,13 +214,14 @@ export function CollapsibleNav({
   const navLinks = useObservable(observables.navLinks$, []).filter((link) => !link.hidden);
   const customNavLink = useObservable(observables.customNavLink$, undefined);
   const appId = useObservable(observables.appId$, '');
+  const navGroupsMap = useObservable(observables.navGroupsMap$, {});
   const lockRef = useRef<HTMLButtonElement>(null);
 
   const allGroupedNavLinks = groupBy(navLinks, (link) => link?.category?.id);
   const { undefined: unknownsAll = [], ...allCategorizedLinksForAll } = allGroupedNavLinks;
   const categoryDictionary = getAllCategories(allCategorizedLinksForAll);
 
-  const [focusGroup, setFocusGroup] = useState<AppCategory | undefined>(undefined);
+  const [focusGroup, setFocusGroup] = useState<ChromeNavGroup | undefined>(undefined);
 
   const [shouldShrinkSecondNavigation, setShouldShrinkSecondNavigation] = useState(false);
   const readyForEUI = (link: ChromeNavLink, needsIcon: boolean = false) => {
@@ -218,8 +237,11 @@ export function CollapsibleNav({
 
   useEffect(() => {
     if (appId) {
-      const findApp = navLinks.find((link) => link.id === appId);
-      setFocusGroup(findApp?.group);
+      const orderedGroups = sortBy(Object.values(navGroupsMap), (group) => group.order);
+      const findMatchedGroup = orderedGroups.find(
+        (group) => !!group.navLinks.find((navLink) => navLink.id === appId)
+      );
+      setFocusGroup(findMatchedGroup);
     }
   }, [appId]);
 
@@ -247,7 +269,7 @@ export function CollapsibleNav({
             <EuiFlexGroup alignItems="center">
               <EuiFlexItem>
                 <h3 className="euiAccordion__triggerWrapper euiCollapsibleNavGroup__title">
-                  {focusGroup.label}
+                  {focusGroup.title}
                 </h3>
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
@@ -260,7 +282,10 @@ export function CollapsibleNav({
             </EuiFlexGroup>
           </div>
           <NavGroups
-            navLinks={navLinks.filter((link) => link.group?.id === focusGroup.id)}
+            navLinks={fullfillRegistrationLinksToChromeNavLinks(
+              navGroupsMap[focusGroup.id]?.navLinks,
+              navLinks
+            )}
             categoryDictionary={categoryDictionary}
             logos={logos}
             storage={storage}
@@ -287,11 +312,16 @@ export function CollapsibleNav({
     return 320;
   }, [focusGroup, secondNavigationWidth]);
 
-  const onGroupClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>, group: AppCategory) => {
-    const groupedNavLinks = groupBy(
-      navLinks.filter((link) => link.group?.id === group.id),
-      (link) => link?.category?.id
+  const onGroupClick = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    group: ChromeNavGroup
+  ) => {
+    const fullfilledNavLinksInGroup = fullfillRegistrationLinksToChromeNavLinks(
+      navGroupsMap[group.id].navLinks,
+      navLinks
     );
+
+    const groupedNavLinks = groupBy(fullfilledNavLinksInGroup, (link) => link?.category?.id);
     const { undefined: unknownsInGroup = [], ...allCategorizedLinks } = groupedNavLinks;
     const orderedCategories = getOrderedCategories(allCategorizedLinks, categoryDictionary);
     let firstLink: ChromeNavLink;
@@ -425,17 +455,7 @@ export function CollapsibleNav({
                 readyForEUI={readyForEUI}
                 style={{ display: 'flex', flexDirection: 'column' }}
                 suffix={
-                  <div
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <div>
-                      {collapsibleNavHeaderRender && collapsibleNavHeaderRender({ onGroupClick })}
-                    </div>
+                  <div>
                     <div>
                       {
                         <EuiCollapsibleNavGroup>
@@ -448,7 +468,7 @@ export function CollapsibleNav({
                               return (
                                 <EuiListGroupItem
                                   key={group.id}
-                                  label={group.label}
+                                  label={group.title}
                                   isActive={group.id === focusGroup?.id}
                                   onClick={(e) => {
                                     if (focusGroup?.id === group.id) {
@@ -463,45 +483,46 @@ export function CollapsibleNav({
                           </EuiListGroup>
                         </EuiCollapsibleNavGroup>
                       }
-                      {/* Docking button only for larger screens that can support it*/}
-                      <EuiShowFor sizes={['l', 'xl']}>
-                        <EuiCollapsibleNavGroup>
-                          <EuiListGroup flush>
-                            <EuiListGroupItem
-                              data-test-subj="collapsible-nav-lock"
-                              buttonRef={lockRef}
-                              size="xs"
-                              color="subdued"
-                              label={
-                                isLocked
-                                  ? i18n.translate('core.ui.primaryNavSection.undockLabel', {
-                                      defaultMessage: 'Undock navigation',
-                                    })
-                                  : i18n.translate('core.ui.primaryNavSection.dockLabel', {
-                                      defaultMessage: 'Dock navigation',
-                                    })
-                              }
-                              aria-label={
-                                isLocked
-                                  ? i18n.translate('core.ui.primaryNavSection.undockAriaLabel', {
-                                      defaultMessage: 'Undock primary navigation',
-                                    })
-                                  : i18n.translate('core.ui.primaryNavSection.dockAriaLabel', {
-                                      defaultMessage: 'Dock primary navigation',
-                                    })
-                              }
-                              onClick={() => {
-                                onIsLockedUpdate(!isLocked);
-                                if (lockRef.current) {
-                                  lockRef.current.focus();
-                                }
-                              }}
-                              iconType={isLocked ? 'lock' : 'lockOpen'}
-                            />
-                          </EuiListGroup>
-                        </EuiCollapsibleNavGroup>
-                      </EuiShowFor>
                     </div>
+                    {collapsibleNavHeaderRender && collapsibleNavHeaderRender({ onGroupClick })}
+                    {/* Docking button only for larger screens that can support it*/}
+                    <EuiShowFor sizes={['l', 'xl']}>
+                      <EuiCollapsibleNavGroup>
+                        <EuiListGroup flush>
+                          <EuiListGroupItem
+                            data-test-subj="collapsible-nav-lock"
+                            buttonRef={lockRef}
+                            size="xs"
+                            color="subdued"
+                            label={
+                              isLocked
+                                ? i18n.translate('core.ui.primaryNavSection.undockLabel', {
+                                    defaultMessage: 'Undock navigation',
+                                  })
+                                : i18n.translate('core.ui.primaryNavSection.dockLabel', {
+                                    defaultMessage: 'Dock navigation',
+                                  })
+                            }
+                            aria-label={
+                              isLocked
+                                ? i18n.translate('core.ui.primaryNavSection.undockAriaLabel', {
+                                    defaultMessage: 'Undock primary navigation',
+                                  })
+                                : i18n.translate('core.ui.primaryNavSection.dockAriaLabel', {
+                                    defaultMessage: 'Dock primary navigation',
+                                  })
+                            }
+                            onClick={() => {
+                              onIsLockedUpdate(!isLocked);
+                              if (lockRef.current) {
+                                lockRef.current.focus();
+                              }
+                            }}
+                            iconType={isLocked ? 'lock' : 'lockOpen'}
+                          />
+                        </EuiListGroup>
+                      </EuiCollapsibleNavGroup>
+                    </EuiShowFor>
                   </div>
                 }
               />

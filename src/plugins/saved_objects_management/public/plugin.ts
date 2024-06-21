@@ -61,7 +61,7 @@ import {
 } from './services';
 import { registerServices } from './register_services';
 import { bootstrap } from './ui_actions_bootstrap';
-import { DEFAULT_APP_CATEGORIES } from '../../../core/public';
+import { DEFAULT_APP_CATEGORIES, DEFAULT_GROUPS } from '../../../core/public';
 
 export interface SavedObjectsManagementPluginSetup {
   actions: SavedObjectsManagementActionServiceSetup;
@@ -173,6 +173,12 @@ export class SavedObjectsManagementPlugin
         });
       },
     });
+
+    core.chrome.addNavLinksToGroup(DEFAULT_GROUPS.dataAdministration, [
+      {
+        id: 'library',
+      },
+    ]);
 
     // sets up the context mappings and registers any triggers/actions for the plugin
     bootstrap(uiActions);

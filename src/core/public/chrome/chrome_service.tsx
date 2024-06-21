@@ -102,7 +102,7 @@ export interface StartDeps {
 }
 
 export interface CollapsibleNavHeaderRenderProps {
-  onGroupClick: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>, group: AppCategory) => void;
+  onGroupClick: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>, group: ChromeNavGroup) => void;
 }
 
 export type CollapsibleNavHeaderRender = (
