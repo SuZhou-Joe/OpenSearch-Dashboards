@@ -84,7 +84,7 @@ import {
   OpenSearchDashboardsLegacyStart,
 } from '../../opensearch_dashboards_legacy/public';
 import { FeatureCatalogueCategory, HomePublicPluginSetup } from '../../../plugins/home/public';
-import { DEFAULT_APP_CATEGORIES } from '../../../core/public';
+import { DEFAULT_APP_CATEGORIES, DEFAULT_GROUPS } from '../../../core/public';
 
 import {
   ACTION_CLONE_PANEL,
@@ -371,6 +371,7 @@ export class DashboardPlugin
       defaultPath: `#${DashboardConstants.LANDING_PAGE_PATH}`,
       updater$: this.appStateUpdater,
       category: DEFAULT_APP_CATEGORIES.opensearchDashboards,
+      group: DEFAULT_GROUPS.analytics,
       mount: async (params: AppMountParameters) => {
         const [coreStart, pluginsStart, dashboardStart] = await core.getStartServices();
         this.currentHistory = params.history;

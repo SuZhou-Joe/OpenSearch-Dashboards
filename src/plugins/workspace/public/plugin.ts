@@ -18,6 +18,7 @@ import {
   PublicAppInfo,
   ChromeBreadcrumb,
   WorkspaceAvailability,
+  DEFAULT_APP_CATEGORIES,
 } from '../../../core/public';
 import {
   WORKSPACE_FATAL_ERROR_APP_ID,
@@ -284,18 +285,18 @@ export class WorkspacePlugin implements Plugin<{}, {}, WorkspacePluginSetupDeps>
     /**
      * Register workspace dropdown selector on the top of left navigation menu
      */
-    core.chrome.registerCollapsibleNavHeader(() => {
+    core.chrome.registerCollapsibleNavHeader((props) => {
       if (!this.coreStart) {
         return null;
       }
-      return React.createElement(WorkspaceMenu, { coreStart: this.coreStart });
+      return React.createElement(WorkspaceMenu, { coreStart: this.coreStart, ...props });
     });
 
     // workspace list
     core.application.register({
       id: WORKSPACE_LIST_APP_ID,
-      title: '',
-      navLinkStatus: AppNavLinkStatus.hidden,
+      title: 'Workspaces',
+      category: DEFAULT_APP_CATEGORIES.opensearchDashboards,
       async mount(params: AppMountParameters) {
         const { renderListApp } = await import('./application');
         return mountWorkspaceApp(params, renderListApp);
@@ -316,10 +317,10 @@ export class WorkspacePlugin implements Plugin<{}, {}, WorkspacePluginSetupDeps>
 
     this.currentWorkspaceIdSubscription = this._changeSavedObjectCurrentWorkspace();
 
-    this.setWorkspaceConfigurableApps(core).then(() => {
-      // filter the nav links based on the current workspace
-      this.filterNavLinks(core);
-    });
+    // this.setWorkspaceConfigurableApps(core).then(() => {
+    //   // filter the nav links based on the current workspace
+    //   this.filterNavLinks(core);
+    // });
 
     this.addWorkspaceToBreadcrumbs(core);
 

@@ -54,7 +54,12 @@ import {
 } from '../..';
 import { InternalApplicationStart } from '../../../application/types';
 import { HttpStart } from '../../../http';
-import { ChromeHelpExtension, ChromeBranding } from '../../chrome_service';
+import {
+  ChromeHelpExtension,
+  ChromeBranding,
+  CollapsibleNavHeaderRender,
+  NavGroupItemInMap,
+} from '../../chrome_service';
 import { OnIsLockedUpdate } from './';
 import { CollapsibleNav } from './collapsible_nav';
 import { HeaderBadge } from './header_badge';
@@ -72,7 +77,7 @@ export interface HeaderProps {
   appTitle$: Observable<string>;
   badge$: Observable<ChromeBadge | undefined>;
   breadcrumbs$: Observable<ChromeBreadcrumb[]>;
-  collapsibleNavHeaderRender?: () => JSX.Element | null;
+  collapsibleNavHeaderRender?: CollapsibleNavHeaderRender;
   customNavLink$: Observable<ChromeNavLink | undefined>;
   homeHref: string;
   isVisible$: Observable<boolean>;
@@ -95,6 +100,7 @@ export interface HeaderProps {
   logos: Logos;
   survey: string | undefined;
   sidecarConfig$: Observable<ISidecarConfig | undefined>;
+  navGroupsMap$: Observable<Record<string, NavGroupItemInMap>>;
 }
 
 export function Header({
@@ -274,6 +280,7 @@ export function Header({
           }}
           customNavLink$={observables.customNavLink$}
           logos={logos}
+          navGroupsMap$={observables.navGroupsMap$}
         />
       </header>
     </>

@@ -39,6 +39,7 @@ export {
   ChromeNavGroup,
   ChromeRegistrationNavLink,
   NavGroupType,
+  CollapsibleNavHeaderRenderProps,
 } from './chrome_service';
 export {
   ChromeHelpExtensionMenuLink,

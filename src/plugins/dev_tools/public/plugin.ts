@@ -41,6 +41,7 @@ import {
   DEFAULT_APP_CATEGORIES,
   RightNavigationOrder,
   RightNavigationButton,
+  DEFAULT_GROUPS,
 } from '../../../core/public';
 import { UrlForwardingSetup } from '../../url_forwarding/public';
 import { CreateDevToolArgs, DevToolApp, createDevToolApp } from './dev_tool';
@@ -79,7 +80,7 @@ export class DevToolsPlugin implements Plugin<DevToolsSetup> {
   }
 
   private title = i18n.translate('devTools.devToolsTitle', {
-    defaultMessage: 'Dev Tools',
+    defaultMessage: 'console',
   });
 
   private id = 'dev_tools';
@@ -92,10 +93,9 @@ export class DevToolsPlugin implements Plugin<DevToolsSetup> {
       id: this.id,
       title: this.title,
       updater$: this.appStateUpdater,
-      icon: '/ui/logos/opensearch_mark.svg',
       /* the order of dev tools, it shows as last item of management section */
       order: 9070,
-      category: DEFAULT_APP_CATEGORIES.management,
+      group: DEFAULT_GROUPS.devTools,
       mount: async (params: AppMountParameters) => {
         const { element, history } = params;
         element.classList.add('devAppWrapper');

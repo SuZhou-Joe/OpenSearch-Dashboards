@@ -101,9 +101,15 @@ export interface StartDeps {
   overlays: OverlayStart;
 }
 
-type CollapsibleNavHeaderRender = () => JSX.Element | null;
+export interface CollapsibleNavHeaderRenderProps {
+  onGroupClick: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>, group: AppCategory) => void;
+}
 
-type NavGroupItemInMap = ChromeNavGroup & {
+export type CollapsibleNavHeaderRender = (
+  props: CollapsibleNavHeaderRenderProps
+) => JSX.Element | null;
+
+export type NavGroupItemInMap = ChromeNavGroup & {
   navLinks: ChromeRegistrationNavLink[];
 };
 
@@ -330,6 +336,7 @@ export class ChromeService {
           survey={injectedMetadata.getSurvey()}
           collapsibleNavHeaderRender={this.collapsibleNavHeaderRender}
           sidecarConfig$={sidecarConfig$}
+          navGroupsMap$={this.navGroupsMap$}
         />
       ),
 
