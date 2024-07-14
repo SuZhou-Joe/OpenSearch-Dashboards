@@ -79,6 +79,26 @@ export class PersistedLog<T = any> {
     return nextItems;
   }
 
+  public update(val: T, whereFn: (item: T) => boolean) {
+    const nextItems = [...this.get()].map((item) => {
+      if (whereFn(item)) {
+        return {
+          ...item,
+          ...val,
+        };
+      }
+
+      return item;
+    });
+
+    // Persist the stack to storage
+    this.storage.setItem(this.name, JSON.stringify(nextItems));
+    // Notify subscribers
+    this.items$.next(nextItems);
+
+    return nextItems;
+  }
+
   public get() {
     return cloneDeep(this.items$.value);
   }

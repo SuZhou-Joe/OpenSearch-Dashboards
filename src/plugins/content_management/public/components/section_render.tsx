@@ -7,13 +7,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useObservable } from 'react-use';
 import { BehaviorSubject } from 'rxjs';
 
+import { EuiTitle } from '@elastic/eui';
+import { SavedObjectsClientContract } from 'opensearch-dashboards/public';
 import { Content, Section } from '../services';
 import { EmbeddableInput, EmbeddableRenderer, EmbeddableStart } from '../../../embeddable/public';
 import { DashboardContainerInput } from '../../../dashboard/public';
 import { createCardSection, createDashboardSection } from './utils';
 import { CARD_CONTAINER } from './card_container/card_container';
-import { EuiTitle } from '@elastic/eui';
-import { SavedObjectsClientContract } from 'opensearch-dashboards/public';
 
 interface Props {
   section: Section;
@@ -36,7 +36,7 @@ const DashboardSection = ({ section, embeddable, contents$, savedObjectsClient }
         setInput(ds)
       );
     }
-  }, [section, contents]);
+  }, [section, contents, savedObjectsClient]);
 
   const factory = embeddable.getEmbeddableFactory('dashboard');
 
@@ -77,6 +77,10 @@ export const SectionRender = (props: Props) => {
 
   if (props.section.kind === 'card') {
     return <CardSection {...props} />;
+  }
+
+  if (props.section.kind === 'custom') {
+    return props.section.render?.(props.contents$.getValue());
   }
 
   return null;

@@ -41,6 +41,10 @@ export interface ChromeRecentlyAccessedHistoryItem {
   label: string;
   id: string;
   workspaceId?: string;
+  extraProps?: {
+    type?: string;
+    viewedAt?: number;
+  };
 }
 
 interface StartDeps {
@@ -59,15 +63,31 @@ export class RecentlyAccessedService {
 
     return {
       /** Adds a new item to the history. */
-      add: (link: string, label: string, id: string) => {
+      add: (
+        link: string,
+        label: string,
+        id: string,
+        extraProps?: Omit<ChromeRecentlyAccessedHistoryItem['extraProps'], 'updatedAt'>
+      ) => {
         const currentWorkspaceId = workspaces.currentWorkspaceId$.getValue();
-
-        history.add({
+        const isItemExists = history.get().some((item) => item.id === id);
+        const newlyAddedItem = {
           link,
           label,
           id,
           ...(currentWorkspaceId && { workspaceId: currentWorkspaceId }),
-        });
+          extraProps: {
+            ...extraProps,
+            viewedAt: Date.now(),
+          },
+        };
+
+        if (isItemExists) {
+          history.update(newlyAddedItem, (item) => item.id === newlyAddedItem.id);
+          return;
+        }
+
+        history.add(newlyAddedItem);
       },
 
       /** Gets the current array of history items. */
@@ -96,7 +116,12 @@ export interface ChromeRecentlyAccessed {
    * @param label the label to display in the UI
    * @param id a unique string used to de-duplicate the recently accessed list.
    */
-  add(link: string, label: string, id: string): void;
+  add(
+    link: string,
+    label: string,
+    id: string,
+    extraProps?: Omit<ChromeRecentlyAccessedHistoryItem['extraProps'], 'updatedAt'>
+  ): void;
 
   /**
    * Gets an Array of the current recently accessed history.

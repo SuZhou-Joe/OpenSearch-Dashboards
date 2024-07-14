@@ -8,6 +8,7 @@ import React from 'react';
 import { CoreStart } from 'opensearch-dashboards/public';
 import { Page } from '../../../content_management/public/services';
 import { toMountPoint } from '../../../opensearch_dashboards_react/public';
+import { RecentWork } from './components/homepage/sections/recent_work';
 
 export const GET_STARTED_SECTION_ID = 'homepage_get_started';
 
@@ -17,6 +18,16 @@ export const GET_STARTED_SECTION_ID = 'homepage_get_started';
 const renderHomeCard = () => <div>Hello World!</div>;
 
 export const initHome = (page: Page, core: CoreStart) => {
+  page.createSection({
+    id: 'home:recentWork',
+    order: 1000,
+    title: 'Recent work',
+    kind: 'custom',
+    render() {
+      return <RecentWork core={core} />;
+    },
+  });
+
   /**
    * init get started section
    */

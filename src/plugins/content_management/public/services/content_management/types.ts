@@ -16,7 +16,7 @@ export type Section =
       order: number;
       title?: string;
       description?: string;
-      render?: (contents: Map<string, Content>) => React.ReactNode;
+      render?: (contents: Content[]) => React.ReactNode;
     }
   | {
       kind: 'dashboard';
