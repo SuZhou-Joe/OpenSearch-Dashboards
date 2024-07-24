@@ -39,6 +39,7 @@ import {
 import { ALL_USE_CASE_ID, DEFAULT_APP_CATEGORIES } from '../../../../../core/utils';
 import { CollapsibleNavTop } from './collapsible_nav_group_enabled_top';
 import { HeaderNavControls } from './header_nav_controls';
+import { useHideHomeToggleNavSection } from './home_toggle_nav_section';
 
 export interface CollapsibleNavGroupEnabledProps {
   appId$: InternalApplicationStart['currentAppId$'];
@@ -177,7 +178,7 @@ export function CollapsibleNavGroupEnabled({
   basePath,
   id,
   isLocked,
-  isNavOpen,
+  isNavOpen: isNavOpenProps,
   storage = window.localStorage,
   onIsLockedUpdate,
   closeNav,
@@ -192,6 +193,23 @@ export function CollapsibleNavGroupEnabled({
   const appId = useObservable(observables.appId$, '');
   const navGroupsMap = useObservable(observables.navGroupsMap$, {});
   const currentNavGroup = useObservable(observables.currentNavGroup$, undefined);
+  /**
+   * This is a workaround on 2.16 to hide the navigation items within left navigation
+   * when user is in homepage with workspace enabled + new navigation enabled
+   */
+  const shouldHideHomeToggleNavSection = useHideHomeToggleNavSection({
+    currentAppId$: observables.appId$,
+    navGroupEnabled: true,
+    workspaceEnabled: capabilities.workspaces.enabled,
+  });
+
+  const isNavOpen = useMemo(() => {
+    if (shouldHideHomeToggleNavSection) {
+      return false;
+    }
+
+    return isNavOpenProps;
+  }, [shouldHideHomeToggleNavSection, isNavOpenProps]);
 
   const navLinksForRender: ChromeNavLink[] = useMemo(() => {
     if (currentNavGroup && currentNavGroup.id !== ALL_USE_CASE_ID) {
