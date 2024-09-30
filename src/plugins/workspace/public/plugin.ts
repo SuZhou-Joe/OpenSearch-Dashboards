@@ -552,6 +552,7 @@ export class WorkspacePlugin
               key: 'workspacePickerContent',
               coreStart: this.coreStart,
               registeredUseCases$: this.registeredUseCases$,
+              isInTwoLines: true,
             }),
           ],
         });

@@ -90,13 +90,18 @@ export const WorkspaceMenu = ({ coreStart, registeredUseCases$ }: Props) => {
       panelPaddingSize="s"
       repositionOnScroll={true}
     >
-      <EuiFlexGroup direction="column" alignItems="center" gutterSize="none">
+      <EuiFlexGroup
+        direction="column"
+        alignItems="center"
+        gutterSize="none"
+        style={{ width: '300px' }}
+      >
         <EuiFlexItem style={{ padding: '24px' }}>
           <EuiFlexGroup
             justifyContent="spaceAround"
             alignItems="center"
             direction="column"
-            gutterSize="s"
+            gutterSize="none"
           >
             {currentWorkspace ? (
               <>
@@ -108,15 +113,19 @@ export const WorkspaceMenu = ({ coreStart, registeredUseCases$ }: Props) => {
                     color={getValidWorkspaceColor(currentWorkspace.color)}
                   />
                 </EuiFlexItem>
-                <EuiFlexItem grow={false} data-test-subj="workspace-menu-current-workspace-name">
-                  <EuiText textAlign="center">{currentWorkspaceName}</EuiText>
+                <EuiFlexItem data-test-subj="workspace-menu-current-workspace-name">
+                  <EuiText textAlign="center" size="s">
+                    <h3>{currentWorkspaceName}</h3>
+                  </EuiText>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
                   <EuiText
                     size="xs"
-                    data-test-subj="workspace-menu-current-use-case"
+                    data-test-subj="workspace-menu-current-workspace-use-case"
                     textAlign="center"
                     color="subdued"
                   >
-                    {getUseCase(currentWorkspace)?.title ?? ''}
+                    <p>{getUseCase(currentWorkspace)?.title ?? ''}</p>
                   </EuiText>
                 </EuiFlexItem>
               </>
@@ -132,18 +141,19 @@ export const WorkspaceMenu = ({ coreStart, registeredUseCases$ }: Props) => {
             )}
           </EuiFlexGroup>
         </EuiFlexItem>
-        <EuiFlexItem>
+        <EuiFlexItem className="eui-fullWidth">
           <EuiPanel
             paddingSize="none"
             hasBorder={false}
             hasShadow={false}
             color="transparent"
-            style={{ height: '42vh', width: '300px' }}
+            style={{ height: '40vh' }}
           >
             <WorkspacePickerContent
               coreStart={coreStart}
               registeredUseCases$={registeredUseCases$}
               onClickWorkspace={() => setPopover(false)}
+              isInTwoLines={false}
             />
           </EuiPanel>
         </EuiFlexItem>
