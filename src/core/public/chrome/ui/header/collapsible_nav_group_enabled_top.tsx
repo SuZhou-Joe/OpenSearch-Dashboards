@@ -36,6 +36,7 @@ export interface CollapsibleNavTopProps {
   currentWorkspace$: WorkspacesStart['currentWorkspace$'];
   setCurrentNavGroup: ChromeNavGroupServiceStartContract['setCurrentNavGroup'];
   navLinks: ChromeNavLink[];
+  shouldShowCollapsedNavHeaderContent?: boolean;
 }
 
 export const CollapsibleNavTop = ({
@@ -51,6 +52,7 @@ export const CollapsibleNavTop = ({
   homeLink,
   navGroupsMap,
   navLinks,
+  shouldShowCollapsedNavHeaderContent,
 }: CollapsibleNavTopProps) => {
   const currentWorkspace = useObservable(currentWorkspace$);
 
@@ -149,10 +151,12 @@ export const CollapsibleNavTop = ({
           />
         </EuiFlexItem>
       </EuiFlexGroup>
-      {currentNavGroup?.title && collapsibleNavHeaderRender && (
+      {(currentNavGroup?.title || collapsibleNavHeaderRender) && (
         <>
           <EuiSpacer />
-          {collapsibleNavHeaderRender()}
+          {shouldShowCollapsedNavHeaderContent && collapsibleNavHeaderRender
+            ? collapsibleNavHeaderRender?.()
+            : currentNavGroup?.title}
         </>
       )}
     </EuiPanel>

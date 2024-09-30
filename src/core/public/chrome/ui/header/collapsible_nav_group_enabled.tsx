@@ -120,7 +120,7 @@ export function CollapsibleNavGroupEnabled({
     : currentNavGroupId === ALL_USE_CASE_ID;
 
   const shouldShowCollapsedNavHeaderContent =
-    isNavOpen && !!collapsibleNavHeaderRender && !currentNavGroupId;
+    isNavOpen && !!collapsibleNavHeaderRender && (!currentNavGroupId || !currentNavGroup?.type);
 
   const navLinksForRender: ChromeNavLink[] = useMemo(() => {
     const getSystemNavGroups = () => {
@@ -305,6 +305,7 @@ export function CollapsibleNavGroupEnabled({
               homeLink={homeLink}
               navGroupsMap={navGroupsMap}
               collapsibleNavHeaderRender={collapsibleNavHeaderRender}
+              shouldShowCollapsedNavHeaderContent={shouldShowCollapsedNavHeaderContent}
               navLinks={navLinks}
               navigateToApp={navigateToApp}
               logos={logos}
@@ -325,19 +326,6 @@ export function CollapsibleNavGroupEnabled({
             hasShadow={false}
             className="eui-yScroll flex-1-container"
           >
-            {shouldShowCollapsedNavHeaderContent && collapsibleNavHeaderRender ? (
-              <>
-                <EuiPanel
-                  paddingSize="none"
-                  color="transparent"
-                  hasBorder={false}
-                  hasShadow={false}
-                >
-                  {collapsibleNavHeaderRender()}
-                </EuiPanel>
-                <EuiSpacer />
-              </>
-            ) : null}
             <NavGroups
               navLinks={navLinksForRender}
               navigateToApp={navigateToApp}
