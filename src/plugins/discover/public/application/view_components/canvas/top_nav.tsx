@@ -27,6 +27,7 @@ import { useDispatch, setSavedQuery, useSelector } from '../../utils/state_manag
 import './discover_canvas.scss';
 import { TopNavMenuItemRenderType } from '../../../../../navigation/public';
 import { ResultStatus } from '../utils';
+import { useObservable } from 'react-use';
 
 export interface TopNavProps {
   opts: {
@@ -46,6 +47,7 @@ export const TopNav = ({ opts, showSaveQuery, isEnhancementsEnabled }: TopNavPro
   const [queryStatus, setQueryStatus] = useState<QueryStatus>({ status: ResultStatus.READY });
   const state = useSelector((s) => s.discover);
   const dispatch = useDispatch();
+  const queryData = useObservable(data$);
 
   const {
     navigation: {
@@ -186,6 +188,7 @@ export const TopNav = ({ opts, showSaveQuery, isEnhancementsEnabled }: TopNavPro
         screenTitle={screenTitle}
         queryStatus={queryStatus}
         showQueryBar={!!opts?.optionalRef?.datasetSelectorRef}
+        rows={queryData?.rows}
       />
     </>
   );

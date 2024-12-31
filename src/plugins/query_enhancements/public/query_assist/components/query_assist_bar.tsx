@@ -6,7 +6,7 @@
 import { EuiFlexGroup, EuiFlexItem, EuiForm, EuiFormRow } from '@elastic/eui';
 import React, { SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { i18n } from '@osd/i18n';
-import { Dataset } from '../../../../data/common';
+import { Dataset, IIndexPattern, IIndexPatternFieldList } from '../../../../data/common';
 import {
   IDataPluginServices,
   PersistedLog,
@@ -47,6 +47,32 @@ export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
   const selectedIndex = selectedDataset?.title;
   const previousQuestionRef = useRef<string>();
   const { updateQueryState } = useQueryAssist();
+  const { updateQuestion, isQueryAssistCollapsed } = useQueryAssist();
+  const selectedIndexPattern = useMemo(() => {
+    const firstItem = props.dependencies.indexPatterns?.[0] as IIndexPattern | undefined;
+    if (firstItem?.fields) {
+      return firstItem;
+    }
+
+    return null;
+  }, [props.dependencies.indexPatterns]);
+  // console.log(services);
+  // console.log(props);
+  // const validFields = useMemo(() => {
+  //   if (selectedIndexPattern && !selectedIndexPattern.fieldsLoading) {
+  //     const fields = selectedIndexPattern.fields as IIndexPatternFieldList;
+  //     if (fields.toSpec) {
+        
+  //     }
+  //     return selectedIndexPattern.fields
+  //   }
+  // }, [
+  //   selectedIndexPattern
+  // ]);
+  // console.log('selectedIndexPattern', selectedIndexPattern);
+  // if (selectedIndexPattern?.toSpec) {
+  //   console.log(selectedIndexPattern?.toSpec());
+  // }
 
   useEffect(() => {
     const subscription = queryString.getUpdates$().subscribe((query) => {
@@ -148,7 +174,7 @@ export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
             />
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <QueryAssistSubmitButton isDisabled={loading || !datasetSupported} />
+            <QueryAssistSubmitButton isDisabled={loading || selectedIndexPattern.fieldsLoading || !datasetSupported} />
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiFormRow>

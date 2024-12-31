@@ -15,6 +15,7 @@ import {
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { SearchResponse } from 'elasticsearch';
 import {
   DatasetSelector,
   DatasetSelectorAppearance,
@@ -64,6 +65,7 @@ export interface QueryEditorTopRowProps {
   datePickerRef?: React.RefObject<HTMLDivElement>;
   savedQueryManagement?: any;
   queryStatus?: QueryStatus;
+  rows?: SearchResponse<unknown>['hits']['hits'][number]
 }
 
 // Needed for React.lazy
@@ -203,6 +205,8 @@ export default function QueryEditorTopRow(props: QueryEditorTopRowProps) {
           filterBar={props.filterBar}
           savedQueryManagement={props.savedQueryManagement}
           queryStatus={props.queryStatus}
+          indexPatterns={props.indexPatterns}
+          rows={props.rows}
         />
       </EuiFlexItem>
     );

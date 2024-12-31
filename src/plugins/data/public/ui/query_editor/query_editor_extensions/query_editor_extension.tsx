@@ -7,7 +7,7 @@ import { EuiErrorBoundary } from '@elastic/eui';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Observable } from 'rxjs';
-import { DataStructureMeta, Query } from '../../../../common';
+import { DataStructureMeta, IIndexPattern, Query } from '../../../../common';
 import { ResultStatus } from '../../../query/query_string/language_service/lib';
 
 // ID for the container that will house the action bar buttons. Should be used by Discover Plugin's ResultsActionBar component
@@ -49,6 +49,15 @@ export interface QueryEditorExtensionDependencies {
    * Fetch status for the currently running query
    */
   fetchStatus?: ResultStatus;
+
+  /**
+   * The selected index patterns
+   */
+  indexPatterns?: Array<IIndexPattern | string>;
+
+  /**
+   * Result for given 
+   */
 }
 
 // When updating this please update docs/plugins/data/query-editor-enhancements.md

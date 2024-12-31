@@ -17,6 +17,7 @@ import {
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { monaco } from '@osd/monaco';
+import { SearchResponse } from 'elasticsearch';
 import {
   IDataPluginServices,
   Query,
@@ -26,6 +27,7 @@ import {
   QueryResult,
   QueryStatus,
   useQueryStringManager,
+  IIndexPattern,
 } from '../..';
 import { OpenSearchDashboardsReactContextValue } from '../../../../opensearch_dashboards_react/public';
 import { fromUser, getQueryLog, PersistedLog, toUser } from '../../query';
@@ -60,6 +62,8 @@ export interface QueryEditorProps {
   prepend?: React.ComponentProps<typeof EuiCompressedFieldText>['prepend'];
   savedQueryManagement?: any;
   queryStatus?: QueryStatus;
+  indexPatterns?: Array<IIndexPattern | string>;
+  rows?: SearchResponse<unknown>['hits']['hits'][number];
 }
 
 interface Props extends QueryEditorProps {
@@ -136,6 +140,8 @@ export const QueryEditorUI: React.FC<Props> = (props) => {
         bottomPanelContainer={bottomPanelRef.current}
         query={query}
         fetchStatus={props.queryStatus?.status}
+        indexPatterns={props.indexPatterns}
+        rows={props.rows}
       />
     );
   };

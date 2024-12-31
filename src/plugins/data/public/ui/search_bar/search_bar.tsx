@@ -33,6 +33,7 @@ import classNames from 'classnames';
 import { cloneDeep, compact, get, isEqual } from 'lodash';
 import React, { Component } from 'react';
 import ResizeObserver from 'resize-observer-polyfill';
+import { SearchResponse } from 'elasticsearch';
 import {
   OpenSearchDashboardsReactContextValue,
   withOpenSearchDashboards,
@@ -94,6 +95,7 @@ export interface SearchBarOwnProps {
   onRefresh?: (payload: { dateRange: TimeRange }) => void;
   indicateNoData?: boolean;
   queryStatus?: QueryStatus;
+  rows?: Array<SearchResponse<unknown>['hits']['hits'][number]>;
 }
 
 export type SearchBarProps = SearchBarOwnProps & SearchBarInjectedDeps;
@@ -565,6 +567,7 @@ class SearchBarUI extends Component<SearchBarProps, State> {
           datePickerRef={this.props.datePickerRef}
           savedQueryManagement={searchBarMenu(false, true)}
           queryStatus={this.props.queryStatus}
+          rows={this.props.rows}
         />
       );
     }

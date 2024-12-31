@@ -33,12 +33,12 @@ import { ErrorToastOptions, ToastInputFields } from 'src/core/public/notificatio
 import type { SavedObject } from 'src/core/server';
 import { FieldFormat, IndexPatternField, OSD_FIELD_TYPES } from '..';
 import { SerializedFieldFormat } from '../../../expressions/common';
-import { IFieldType } from './fields';
+import { IFieldType, IIndexPatternFieldList } from './fields';
 
 export type FieldFormatMap = Record<string, SerializedFieldFormat>;
 
 export interface IIndexPattern {
-  fields: IFieldType[];
+  fields: IFieldType[] | IIndexPatternFieldList;
   title: string;
   id?: string;
   type?: string;
@@ -49,6 +49,7 @@ export interface IIndexPattern {
   getFormatterForField?: (
     field: IndexPatternField | IndexPatternField['spec'] | IFieldType
   ) => FieldFormat;
+  fieldsLoading?: boolean;
 }
 
 export interface IndexPatternAttributes {
