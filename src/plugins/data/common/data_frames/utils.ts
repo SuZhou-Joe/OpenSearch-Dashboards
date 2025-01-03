@@ -118,10 +118,17 @@ export const convertResult = ({
         hit[field.name] = processField(field, field.values[index]);
       });
 
-      hits.push({
+      const payload: Partial<SearchResponse<any>['hits']['hits'][number]> = {
         _index: data.name,
         _source: hit,
-      });
+      };
+
+      // Only set fields in first hit to save space.
+      if (index === 0) {
+        payload.fields = data.fields;
+      }
+
+      hits.push(payload);
     }
   }
   searchResponse.hits.hits = hits;

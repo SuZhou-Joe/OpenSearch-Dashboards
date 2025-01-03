@@ -53,6 +53,7 @@ export function registerQueryAssistRoutes(router: IRouter) {
           question: schema.string(),
           language: schema.string(),
           dataSourceId: schema.maybe(schema.string()),
+          metadata: schema.maybe(schema.any()),
         }),
       },
     },

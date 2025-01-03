@@ -16,6 +16,7 @@ export interface QueryAssistParameters {
   language: string;
   // for MDS
   dataSourceId?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export enum QueryAssistContextType {

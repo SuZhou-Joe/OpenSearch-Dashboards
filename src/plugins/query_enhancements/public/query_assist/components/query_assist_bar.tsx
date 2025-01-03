@@ -6,7 +6,7 @@
 import { EuiFlexGroup, EuiFlexItem, EuiForm, EuiFormRow } from '@elastic/eui';
 import React, { SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { i18n } from '@osd/i18n';
-import { Dataset, IIndexPattern, IIndexPatternFieldList } from '../../../../data/common';
+import { Dataset, IIndexPattern, IndexPattern, Query, UI_SETTINGS, IIndexPatternFieldList } from '../../../../data/common';
 import {
   IDataPluginServices,
   PersistedLog,
@@ -56,23 +56,6 @@ export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
 
     return null;
   }, [props.dependencies.indexPatterns]);
-  // console.log(services);
-  // console.log(props);
-  // const validFields = useMemo(() => {
-  //   if (selectedIndexPattern && !selectedIndexPattern.fieldsLoading) {
-  //     const fields = selectedIndexPattern.fields as IIndexPatternFieldList;
-  //     if (fields.toSpec) {
-        
-  //     }
-  //     return selectedIndexPattern.fields
-  //   }
-  // }, [
-  //   selectedIndexPattern
-  // ]);
-  // console.log('selectedIndexPattern', selectedIndexPattern);
-  // if (selectedIndexPattern?.toSpec) {
-  //   console.log(selectedIndexPattern?.toSpec());
-  // }
 
   useEffect(() => {
     const subscription = queryString.getUpdates$().subscribe((query) => {
@@ -83,6 +66,48 @@ export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
 
   const onSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
+    const paramsForGeneratePPL: {
+      fields?: Record<string, unknown>;
+      sampleData?: Array<Record<string, unknown>>;
+    } = {};
+    if (selectedIndexPattern) {
+      const data = services.data;
+      const filters = data.query.filterManager.getFilters();
+      const query = data.query.queryString.getQuery();
+      const searchSourceInstance = await services.data.search.searchSource.create({
+        index: selectedIndexPattern as IndexPattern,
+        size: 2,
+        query: query
+          ? ({
+              ...query,
+              query: `source = ${selectedIndexPattern.title} | head 2`,
+              useProvidedQuery: true,
+            } as Query)
+          : undefined,
+        highlightAll: true,
+        version: true,
+        filter: filters,
+      });
+      // Execute the search
+      const fetchResp = await searchSourceInstance.fetch({
+        withLongNumeralsSupport: await services.uiSettings.get(UI_SETTINGS.DATA_WITH_LONG_NUMERALS),
+      });
+      const hits = fetchResp.hits.hits;
+      if (hits.length) {
+        const fields: Array<{ name: string; type: string; values: unknown[] }> | null =
+          fetchResp.hits.hits[0].fields;
+        if (fields) {
+          paramsForGeneratePPL.fields = fields.reduce(
+            (acc, field) => ({
+              ...acc,
+              [field.name]: field,
+            }),
+            {}
+          );
+          paramsForGeneratePPL.sampleData = hits.map((hit) => hit._source);
+        }
+      }
+    }
     if (!inputRef.current?.value) {
       setCallOutType('empty_query');
       return;
@@ -96,6 +121,9 @@ export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
     previousQuestionRef.current = inputRef.current.value;
     persistedLog.add(inputRef.current.value);
     const params: QueryAssistParameters = {
+      metadata: {
+        paramsForGeneratePPL,
+      },
       question: inputRef.current.value,
       index: selectedIndex,
       language: props.dependencies.language,
@@ -174,7 +202,7 @@ export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
             />
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <QueryAssistSubmitButton isDisabled={loading || selectedIndexPattern.fieldsLoading || !datasetSupported} />
+            <QueryAssistSubmitButton isDisabled={loading || selectedIndexPattern?.fieldsLoading || !datasetSupported} />
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiFormRow>

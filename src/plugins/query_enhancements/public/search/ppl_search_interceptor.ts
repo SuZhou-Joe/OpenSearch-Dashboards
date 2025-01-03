@@ -55,7 +55,7 @@ export class PPLSearchInterceptor extends SearchInterceptor {
       },
     };
 
-    const query = this.buildQuery();
+    const query = this.buildQuery(request);
 
     return fetch(context, query, this.getAggConfig(searchRequest, query));
   }
@@ -88,7 +88,14 @@ export class PPLSearchInterceptor extends SearchInterceptor {
     return this.runSearch(request, options.abortSignal, strategy);
   }
 
-  private buildQuery() {
+  private buildQuery(request?: IOpenSearchDashboardsSearchRequest) {
+    const queriesWithinRequest: Array<Query & { useProvidedQuery: boolean }> =
+      request?.params?.body.query.queries || [];
+    const findQueryWithProvided = queriesWithinRequest.find((query) => query.useProvidedQuery);
+    if (findQueryWithProvided) {
+      const { useProvidedQuery, ...others } = findQueryWithProvided;
+      return others;
+    }
     const { queryString } = this.queryService;
     const query: Query = queryString.getQuery();
     const dataset = query.dataset;
