@@ -23,9 +23,41 @@ import { QueryAssistSubmitButton } from './submit_button';
 import { useQueryAssist } from '../hooks';
 import { isPPLSupportedType } from '../utils/language_support';
 
+const supportedDataSetTypes = ['INDEXES', 'S3'];
+
 interface QueryAssistInputProps {
   dependencies: QueryEditorExtensionDependencies;
 }
+
+const queryPPL = async ({
+  services,
+  selectedIndexPattern,
+  queryString,
+}: {
+  services: IDataPluginServices;
+  selectedIndexPattern: IIndexPattern;
+  queryString: string;
+}) => {
+  const query = services.data.query.queryString.getQuery();
+  const searchSourceInstance = await services.data.search.searchSource.create({
+    index: selectedIndexPattern as IndexPattern,
+    size: 2,
+    query: query
+      ? ({
+          ...query,
+          query: queryString,
+          useProvidedQuery: true,
+        } as Query)
+      : undefined,
+    highlightAll: true,
+    version: true,
+  });
+  // Execute the search
+  const fetchResp = await searchSourceInstance.fetch({
+    withLongNumeralsSupport: await services.uiSettings.get(UI_SETTINGS.DATA_WITH_LONG_NUMERALS),
+  });
+  return fetchResp;
+};
 
 export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
   const { services } = useOpenSearchDashboards<IDataPluginServices>();
@@ -64,48 +96,43 @@ export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
     return () => subscription.unsubscribe();
   }, [queryString]);
 
+  const query = services.data.query.queryString.getQuery();
+
   const onSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     const paramsForGeneratePPL: {
-      fields?: Record<string, unknown>;
-      sampleData?: Array<Record<string, unknown>>;
+      schema?: Record<string, unknown>;
+      samples?: Array<Record<string, unknown>>;
+      type?: string;
     } = {};
-    if (selectedIndexPattern) {
-      const data = services.data;
-      const filters = data.query.filterManager.getFilters();
-      const query = data.query.queryString.getQuery();
-      const searchSourceInstance = await services.data.search.searchSource.create({
-        index: selectedIndexPattern as IndexPattern,
-        size: 2,
-        query: query
-          ? ({
-              ...query,
-              query: `source = ${selectedIndexPattern.title} | head 2`,
-              useProvidedQuery: true,
-            } as Query)
-          : undefined,
-        highlightAll: true,
-        version: true,
-        filter: filters,
-      });
-      // Execute the search
-      const fetchResp = await searchSourceInstance.fetch({
-        withLongNumeralsSupport: await services.uiSettings.get(UI_SETTINGS.DATA_WITH_LONG_NUMERALS),
-      });
-      const hits = fetchResp.hits.hits;
-      if (hits.length) {
-        const fields: Array<{ name: string; type: string; values: unknown[] }> | null =
-          fetchResp.hits.hits[0].fields;
-        if (fields) {
-          paramsForGeneratePPL.fields = fields.reduce(
-            (acc, field) => ({
-              ...acc,
-              [field.name]: field,
-            }),
-            {}
-          );
-          paramsForGeneratePPL.sampleData = hits.map((hit) => hit._source);
-        }
+    if (selectedIndexPattern && query.dataset?.type && query.dataset?.type !== 'INDEXES') {
+      const [sampleData, schema] = await Promise.all([
+        queryPPL({
+          queryString: `source = ${selectedIndexPattern.title} | head 2`,
+          services,
+          selectedIndexPattern,
+        }),
+        queryPPL({
+          queryString: `describe ${selectedIndexPattern.title}`,
+          services,
+          selectedIndexPattern,
+        }),
+      ]);
+      paramsForGeneratePPL.type = query.dataset?.type;
+      const sampleDataHits = sampleData.hits.hits;
+      if (sampleDataHits.length) {
+        paramsForGeneratePPL.samples = sampleDataHits.map((hit) => hit._source);
+      }
+
+      const schemaHits = schema.hits.hits;
+      if (schemaHits.length) {
+        paramsForGeneratePPL.schema = schemaHits.reduce(
+          (acc, currentSchema) => ({
+            ...acc,
+            [currentSchema._source.col_name]: currentSchema._source,
+          }),
+          {}
+        );
       }
     }
     if (!inputRef.current?.value) {
@@ -121,13 +148,11 @@ export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
     previousQuestionRef.current = inputRef.current.value;
     persistedLog.add(inputRef.current.value);
     const params: QueryAssistParameters = {
-      metadata: {
-        paramsForGeneratePPL,
-      },
       question: inputRef.current.value,
       index: selectedIndex,
       language: props.dependencies.language,
       dataSourceId: selectedDataset?.dataSource?.id,
+      ...paramsForGeneratePPL,
     };
     const { response, error } = await generateQuery(params);
     if (error) {
@@ -162,7 +187,12 @@ export const QueryAssistBar: React.FC<QueryAssistInputProps> = (props) => {
     }
   };
 
-  if (props.dependencies.isCollapsed) return null;
+  if (
+    props.dependencies.isCollapsed ||
+    isQueryAssistCollapsed ||
+    !supportedDataSetTypes.includes(query.dataset?.type || '')
+  )
+    return null;
 
   const datasetSupported = isPPLSupportedType(selectedDataset?.type);
 
