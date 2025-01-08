@@ -53,7 +53,9 @@ export function registerQueryAssistRoutes(router: IRouter) {
           question: schema.string(),
           language: schema.string(),
           dataSourceId: schema.maybe(schema.string()),
-          metadata: schema.maybe(schema.any()),
+          samples: schema.maybe(schema.arrayOf(schema.any())),
+          schema: schema.maybe(schema.recordOf(schema.string(), schema.any())),
+          type: schema.maybe(schema.string()),
         }),
       },
     },
@@ -64,14 +66,18 @@ export function registerQueryAssistRoutes(router: IRouter) {
       );
       if (!languageConfig) return response.badRequest({ body: 'Unsupported language' });
       try {
+        const parameters: Record<string, unknown> = {
+          index: request.body.index,
+          question: request.body.question,
+        };
+        if (request.body.samples) parameters.samples = request.body.samples;
+        if (request.body.schema) parameters.schema = request.body.schema;
+        if (request.body.type) parameters.type = 's3';
         const agentResponse = await requestAgentByConfig({
           context,
           configName: languageConfig.agentConfig,
           body: {
-            parameters: {
-              index: request.body.index,
-              question: request.body.question,
-            },
+            parameters,
           },
           dataSourceId: request.body.dataSourceId,
         });
