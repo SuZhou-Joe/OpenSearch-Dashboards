@@ -66,7 +66,7 @@ export const indexPatternTypeConfig: DatasetTypeConfig = {
   },
 
   supportedLanguages: (dataset): string[] => {
-    return ['kuery', 'lucene', 'PPL', 'SQL'];
+    return ['kuery', 'lucene', 'PPL', 'SQL', 't2ppl'];
   },
 
   getSampleQueries: (dataset: Dataset, language: string) => {

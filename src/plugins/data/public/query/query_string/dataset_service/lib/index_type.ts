@@ -89,7 +89,7 @@ export const indexTypeConfig: DatasetTypeConfig = {
   },
 
   supportedLanguages: (dataset: Dataset): string[] => {
-    return ['SQL', 'PPL'];
+    return ['SQL', 'PPL', 't2ppl'];
   },
 
   getSampleQueries: (dataset: Dataset, language: string) => {

@@ -56,8 +56,7 @@ export class QueryEnhancementsPlugin
     const pplControls = [pplLanguageReference('PPL')];
     const sqlControls = [sqlLanguageReference('SQL')];
 
-    // Register PPL language configuration
-    const pplLanguageConfig: LanguageConfig = {
+    const pplCommonConfig: LanguageConfig = {
       id: 'PPL',
       title: 'PPL',
       search: new PPLSearchInterceptor({
@@ -132,7 +131,15 @@ export class QueryEnhancementsPlugin
         },
       ],
     };
+
+    // Register PPL language configuration
+    const pplLanguageConfig: LanguageConfig = pplCommonConfig;
     queryString.getLanguageService().registerLanguage(pplLanguageConfig);
+    queryString.getLanguageService().registerLanguage({
+      ...pplCommonConfig,
+      id: 't2ppl',
+      title: 'Query assistant',
+    });
 
     // Register SQL language configuration
     const sqlLanguageConfig: LanguageConfig = {
