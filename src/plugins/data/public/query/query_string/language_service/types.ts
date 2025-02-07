@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Dataset } from 'src/plugins/data/common';
 import { ISearchInterceptor } from '../../../search';
 import {
   OSD_FIELD_TYPES,
@@ -66,4 +67,5 @@ export interface LanguageConfig {
   supportedAppNames?: string[];
   hideDatePicker?: boolean;
   sampleQueries?: SampleQuery[];
+  capabilityDetector?: (dependencies: { dataset: Dataset }) => Promise<boolean>;
 }

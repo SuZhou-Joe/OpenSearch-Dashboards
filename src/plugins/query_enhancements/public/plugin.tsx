@@ -6,7 +6,7 @@ import { i18n } from '@osd/i18n';
 import { BehaviorSubject } from 'rxjs';
 import moment from 'moment';
 import { CoreSetup, CoreStart, Plugin, PluginInitializerContext } from '../../../core/public';
-import { DataStorage, OSD_FIELD_TYPES } from '../../data/common';
+import { DataStorage, OSD_FIELD_TYPES, T2PPL_LANGUAGE_ID } from '../../data/common';
 import {
   createEditor,
   DefaultInput,
@@ -26,6 +26,7 @@ import {
   QueryEnhancementsPluginStart,
   QueryEnhancementsPluginStartDependencies,
 } from './types';
+import { getAvailableLanguagesForDataSource } from './query_assist/utils';
 
 export class QueryEnhancementsPlugin
   implements
@@ -137,8 +138,12 @@ export class QueryEnhancementsPlugin
     queryString.getLanguageService().registerLanguage(pplLanguageConfig);
     queryString.getLanguageService().registerLanguage({
       ...pplCommonConfig,
-      id: 't2ppl',
-      title: 'Query assistant',
+      id: T2PPL_LANGUAGE_ID,
+      title: 'Query Assistant',
+      capabilityDetector: (dependencies) =>
+        getAvailableLanguagesForDataSource(core.http, dependencies.dataset.dataSource?.id).then(
+          (languages) => languages.length > 0
+        ),
     });
 
     // Register SQL language configuration

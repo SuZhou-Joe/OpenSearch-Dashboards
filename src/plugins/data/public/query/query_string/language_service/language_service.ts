@@ -7,7 +7,7 @@ import { EditorEnhancements, LanguageConfig } from './types';
 import { getDQLLanguageConfig, getLuceneLanguageConfig } from './lib';
 import { ISearchInterceptor } from '../../../search';
 import { createEditor, DQLBody, QueryEditorExtensionConfig, SingleLineInput } from '../../../ui';
-import { DataStorage, setOverrides as setFieldOverrides } from '../../../../common';
+import { Dataset, DataStorage, setOverrides as setFieldOverrides } from '../../../../common';
 import { dqlLanguageReference } from './lib/dql_language_reference';
 import { luceneLanguageReference } from './lib/lucene_language_reference';
 
@@ -58,6 +58,38 @@ export class LanguageService {
 
   public getLanguages(): LanguageConfig[] {
     return Array.from(this.languages.values());
+  }
+
+  public async getSupportedLanguages(props: { dataset?: Dataset }): Promise<LanguageConfig[]> {
+    const allLanguages = this.getLanguages();
+    const capabilitiesResult = await Promise.all(
+      allLanguages.map(
+        (language) =>
+          new Promise<boolean>(async (resolve) => {
+            if (language.capabilityDetector) {
+              try {
+                if (!props.dataset) {
+                  return resolve(false);
+                }
+                const result = await language.capabilityDetector({
+                  dataset: props.dataset,
+                });
+                return resolve(result);
+              } catch (e) {
+                return resolve(false);
+              }
+            }
+
+            resolve(true);
+          })
+      )
+    );
+    const finalResult: LanguageConfig[] = [];
+    capabilitiesResult.forEach((isEnabled, index) =>
+      isEnabled ? finalResult.push(allLanguages[index]) : null
+    );
+
+    return finalResult;
   }
 
   public getDefaultLanguage(): LanguageConfig | undefined {

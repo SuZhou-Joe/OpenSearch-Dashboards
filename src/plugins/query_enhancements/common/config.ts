@@ -4,6 +4,7 @@
  */
 
 import { schema, TypeOf } from '@osd/config-schema';
+import { T2PPL_LANGUAGE_ID } from '../../data/common';
 
 export const configSchema = schema.object({
   enabled: schema.boolean({ defaultValue: true }),
@@ -14,7 +15,7 @@ export const configSchema = schema.object({
         agentConfig: schema.string(),
       }),
       {
-        defaultValue: [{ language: 'PPL', agentConfig: 'os_query_assist_ppl' }],
+        defaultValue: [{ language: T2PPL_LANGUAGE_ID, agentConfig: 'os_query_assist_ppl' }],
       }
     ),
     summary: schema.object({

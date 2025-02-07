@@ -114,3 +114,5 @@ export const UI_SETTINGS = {
   DATE_FORMAT: 'dateFormat',
   DATE_FORMAT_TIMEZONE: 'dateFormat:tz',
 } as const;
+
+export const T2PPL_LANGUAGE_ID = 't2ppl';

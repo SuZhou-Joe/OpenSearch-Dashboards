@@ -23,6 +23,7 @@ const BANNER_STORAGE_KEY = 'queryAssist:banner:show';
 interface QueryAssistBannerProps {
   dependencies: QueryEditorExtensionDependencies;
   languages: string[];
+  onClick?: () => void;
 }
 
 export const QueryAssistBanner: React.FC<QueryAssistBannerProps> = (props) => {
@@ -58,13 +59,7 @@ export const QueryAssistBanner: React.FC<QueryAssistBannerProps> = (props) => {
                 id="queryEnhancements.banner.title.prefix"
                 defaultMessage="Use natural language to explore your data with "
               />
-              <EuiLink
-                data-test-subj="queryAssist-banner-changeLanguage"
-                onClick={() => {
-                  props.dependencies.onSelectLanguage(props.languages[0]);
-                  if (props.dependencies.isCollapsed) props.dependencies.setIsCollapsed(false);
-                }}
-              >
+              <EuiLink data-test-subj="queryAssist-banner-changeLanguage" onClick={props.onClick}>
                 <FormattedMessage
                   id="queryEnhancements.banner.title.suffix"
                   defaultMessage="Natural Language Query Generation for {languages}"

@@ -26,6 +26,7 @@ import { BaseDataset, DEFAULT_DATA, Dataset, DatasetField, Query } from '../../.
 import { getIndexPatterns, getQueryService } from '../../services';
 import { IDataPluginServices } from '../../types';
 import { DatasetIndexedView } from '../../query/query_string/dataset_service';
+import { LanguageConfig } from '../../query';
 
 export const Configurator = ({
   services,
@@ -70,6 +71,7 @@ export const Configurator = ({
   const [indexedViews, setIndexedViews] = useState<DatasetIndexedView[]>([]);
   const [isLoadingIndexedViews, setIsLoadingIndexedViews] = useState(false);
   const [timeFieldsLoading, setTimeFieldsLoading] = useState(false);
+  const [supportedLanguages, setSupportedLanguages] = useState<LanguageConfig[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -123,6 +125,15 @@ export const Configurator = ({
 
     fetchFields();
   }, [baseDataset, indexPatternsService, queryString, timeFields.length]);
+
+  useEffect(() => {
+    setSupportedLanguages([]);
+    languageService
+      .getSupportedLanguages({
+        dataset,
+      })
+      .then((result) => setSupportedLanguages(result));
+  }, [dataset, languageService]);
 
   const updateDatasetForIndexedView = useCallback(async () => {
     if (!indexedViewsService || !selectedIndexedView) {
@@ -258,9 +269,9 @@ export const Configurator = ({
             )}
           >
             <EuiSelect
-              options={languages.map((languageId) => ({
-                text: languageService.getLanguage(languageId)?.title || languageId,
-                value: languageId,
+              options={supportedLanguages.map((supportedLanguage) => ({
+                text: supportedLanguage.title || supportedLanguage.id,
+                value: supportedLanguage.id,
               }))}
               value={language}
               onChange={(e) => {

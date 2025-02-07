@@ -253,3 +253,5 @@ const QueryAssistWrapper: React.FC<QueryAssistWrapperProps> = (props) => {
     </>
   );
 };
+
+export { getAvailableLanguagesForDataSource };

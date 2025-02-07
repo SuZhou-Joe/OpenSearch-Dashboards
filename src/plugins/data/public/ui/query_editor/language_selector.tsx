@@ -44,7 +44,7 @@ export const QueryLanguageSelector = (props: QueryLanguageSelectorProps) => {
   const [languageOptions, setLanguageOptions] = useState<LanguageOption[]>([]);
 
   useEffect(() => {
-    const updateState = () => {
+    const updateState = async () => {
       const query = queryString.getQuery();
       const language = query.language || languageService.getDefaultLanguage()?.id;
       const dataset = query.dataset;
@@ -64,9 +64,12 @@ export const QueryLanguageSelector = (props: QueryLanguageSelectorProps) => {
         return;
       }
 
+      const supportedLanguages = await languageService.getSupportedLanguages({
+        dataset,
+      });
+
       // Build new options including app support check
-      const newOptions = languageService
-        .getLanguages()
+      const newOptions = supportedLanguages
         .filter(
           (lang) =>
             languages.includes(lang.id) &&
