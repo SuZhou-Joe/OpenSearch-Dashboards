@@ -165,7 +165,7 @@ export class QueryStringManager {
    * Updates the query.
    * @param {Query} query
    */
-  public setQuery = (query: Partial<Query>) => {
+  public setQuery = async (query: Partial<Query>) => {
     const curQuery = this.query$.getValue();
     let newQuery = { ...curQuery, ...query };
     if (!isEqual(curQuery, newQuery)) {
@@ -176,11 +176,22 @@ export class QueryStringManager {
           .getType(newQuery.dataset.type)
           ?.supportedLanguages(newQuery.dataset);
 
+        const supportedLanguagesFromlanguageService = (
+          await this.languageService.getSupportedLanguages({
+            dataset: newQuery.dataset,
+          })
+        ).map((language) => language.id);
+
+        // Get the intersec of supportedlanguages and supportedLanguagesFromlanguageService
+        const finalSupportedLanguages = supportedLanguages?.filter((language) =>
+          supportedLanguagesFromlanguageService.includes(language)
+        );
+
         // If we have supported languages and current language isn't supported
-        if (supportedLanguages && !supportedLanguages.includes(newQuery.language)) {
+        if (finalSupportedLanguages && !finalSupportedLanguages.includes(newQuery.language)) {
           // Get initial query with first supported language and new dataset
           newQuery = this.getInitialQuery({
-            language: supportedLanguages[0],
+            language: finalSupportedLanguages[0],
             dataset: newQuery.dataset,
           });
 
@@ -193,8 +204,8 @@ export class QueryStringManager {
               defaultMessage: 'Query language changed to {supportedLanguage}.',
               values: {
                 supportedLanguage:
-                  this.languageService.getLanguage(supportedLanguages[0])?.title ||
-                  supportedLanguages[0],
+                  this.languageService.getLanguage(finalSupportedLanguages[0])?.title ||
+                  finalSupportedLanguages[0],
               },
             }),
           });
