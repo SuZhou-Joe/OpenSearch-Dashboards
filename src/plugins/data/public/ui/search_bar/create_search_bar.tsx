@@ -175,6 +175,15 @@ export function createSearchBar({ core, storage, data }: StatefulSearchBarDeps) 
       );
     }, [query, timeRange, useDefaultBehaviors]);
 
+    const currentLanguageDefinition = data.query.queryString
+      .getLanguageService()
+      .getLanguage(query.language);
+    const customSubmitButton = currentLanguageDefinition?.createCustomSubmitButton
+      ? currentLanguageDefinition?.createCustomSubmitButton({
+          submitQuery: defaultOnQuerySubmit(props, data.query, query),
+        })
+      : undefined;
+
     return (
       <OpenSearchDashboardsContextProvider
         services={{
@@ -212,6 +221,7 @@ export function createSearchBar({ core, storage, data }: StatefulSearchBarDeps) 
           datasetSelectorRef={props.datasetSelectorRef}
           datePickerRef={props.datePickerRef}
           isFilterBarPortable={props.isFilterBarPortable}
+          customSubmitButton={customSubmitButton}
           {...overrideDefaultBehaviors(props)}
         />
       </OpenSearchDashboardsContextProvider>

@@ -531,6 +531,7 @@ export {
   DataPublicPluginStart,
   IDataPluginServices,
   DataPublicPluginStartActions,
+  CustomSubmitButtonProps,
 } from './types';
 
 // Export plugin after all other imports

@@ -2,6 +2,7 @@
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
  */
+import React from 'react';
 import { i18n } from '@osd/i18n';
 import { BehaviorSubject } from 'rxjs';
 import moment from 'moment';
@@ -27,6 +28,7 @@ import {
   QueryEnhancementsPluginStartDependencies,
 } from './types';
 import { getAvailableLanguagesForDataSource } from './query_assist/utils';
+import { T2PPLSubmitBtn } from './query_assist/components/t2ppl_submit_btn';
 
 export class QueryEnhancementsPlugin
   implements
@@ -135,7 +137,6 @@ export class QueryEnhancementsPlugin
 
     // Register PPL language configuration
     const pplLanguageConfig: LanguageConfig = pplCommonConfig;
-    queryString.getLanguageService().registerLanguage(pplLanguageConfig);
     queryString.getLanguageService().registerLanguage({
       ...pplCommonConfig,
       id: T2PPL_LANGUAGE_ID,
@@ -144,7 +145,13 @@ export class QueryEnhancementsPlugin
         getAvailableLanguagesForDataSource(core.http, dependencies.dataset.dataSource?.id).then(
           (languages) => languages.length > 0
         ),
+      createCustomSubmitButton: (props) =>
+        React.createElement(T2PPLSubmitBtn, {
+          ...props,
+          data,
+        }),
     });
+    queryString.getLanguageService().registerLanguage(pplLanguageConfig);
 
     // Register SQL language configuration
     const sqlLanguageConfig: LanguageConfig = {

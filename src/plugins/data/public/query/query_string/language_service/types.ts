@@ -42,6 +42,10 @@ export interface SampleQuery {
   query: string;
 }
 
+export interface CustomSubmitButtonProps {
+  submitQuery?: (payload: { dateRange: TimeRange; query?: Query }) => void;
+}
+
 export interface LanguageConfig {
   id: string;
   title: string;
@@ -68,4 +72,5 @@ export interface LanguageConfig {
   hideDatePicker?: boolean;
   sampleQueries?: SampleQuery[];
   capabilityDetector?: (dependencies: { dataset: Dataset }) => Promise<boolean>;
+  createCustomSubmitButton?: (props: CustomSubmitButtonProps) => React.ReactNode;
 }

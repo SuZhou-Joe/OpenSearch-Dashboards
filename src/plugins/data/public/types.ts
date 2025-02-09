@@ -134,3 +134,5 @@ export interface IDataPluginServices extends Partial<CoreStart> {
   storage: DataStorage;
   data: DataPublicPluginStart;
 }
+
+export { CustomSubmitButtonProps } from './query/query_string/language_service/types';
