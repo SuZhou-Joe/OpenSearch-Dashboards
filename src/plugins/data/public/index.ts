@@ -69,6 +69,7 @@ export {
   SingleLineInput,
   DatasetSelector,
   DatasetSelectorAppearance,
+  DefaultInputProps,
 } from './ui';
 
 import {

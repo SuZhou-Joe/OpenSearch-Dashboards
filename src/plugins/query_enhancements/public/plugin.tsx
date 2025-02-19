@@ -29,6 +29,8 @@ import {
 } from './types';
 import { getAvailableLanguagesForDataSource } from './query_assist/utils';
 import { T2PPLSubmitBtn } from './query_assist/components/t2ppl_submit_btn';
+import { QueryAssistService } from './services/query_assist';
+import { QueryAssistCodeEditor } from './query_assist/components/query_assist_code_editor';
 
 export class QueryEnhancementsPlugin
   implements
@@ -43,6 +45,7 @@ export class QueryEnhancementsPlugin
   private isQuerySummaryCollapsed$ = new BehaviorSubject<boolean>(false);
   private resultSummaryEnabled$ = new BehaviorSubject<boolean>(false);
   private isSummaryAgentAvailable$ = new BehaviorSubject<boolean>(false);
+  private queryAssistService = new QueryAssistService();
 
   constructor(initializerContext: PluginInitializerContext) {
     this.config = initializerContext.config.get<ConfigSchema>();
@@ -53,6 +56,7 @@ export class QueryEnhancementsPlugin
     core: CoreSetup<QueryEnhancementsPluginStartDependencies>,
     { data, usageCollection }: QueryEnhancementsPluginSetupDependencies
   ): QueryEnhancementsPluginSetup {
+    const queryAssistServiceSetup = this.queryAssistService.setup();
     const { queryString } = data.query;
 
     // Define controls once for each language and register language configurations outside of `getUpdates$`
@@ -149,7 +153,14 @@ export class QueryEnhancementsPlugin
         React.createElement(T2PPLSubmitBtn, {
           ...props,
           data,
+          queryAssistService: queryAssistServiceSetup,
         }),
+      editor: createEditor(SingleLineInput, null, pplControls, (props) =>
+        React.createElement(QueryAssistCodeEditor, {
+          ...props,
+          queryAssistService: queryAssistServiceSetup,
+        })
+      ),
     });
     queryString.getLanguageService().registerLanguage(pplLanguageConfig);
 
@@ -228,6 +239,7 @@ export class QueryEnhancementsPlugin
           this.isQuerySummaryCollapsed$,
           this.isSummaryAgentAvailable$,
           this.resultSummaryEnabled$,
+          queryAssistServiceSetup,
           usageCollection
         ),
       },
@@ -246,6 +258,7 @@ export class QueryEnhancementsPlugin
     core: CoreStart,
     { data }: QueryEnhancementsPluginStartDependencies
   ): QueryEnhancementsPluginStart {
+    this.queryAssistService.start();
     setStorage(this.storage);
     setData(data);
     return {};

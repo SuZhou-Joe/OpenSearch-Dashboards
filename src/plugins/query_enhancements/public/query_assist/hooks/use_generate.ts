@@ -3,16 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useObservable } from 'react-use';
 import { IDataPluginServices } from '../../../../data/public';
 import { useOpenSearchDashboards } from '../../../../opensearch_dashboards_react/public';
 import { API } from '../../../common';
 import { QueryAssistParameters, QueryAssistResponse } from '../../../common/query_assist';
 import { formatError } from '../utils';
+import { QueryAssistCommonExport } from '../../services/query_assist';
 
-export const useGenerateQuery = () => {
+export const useGenerateQuery = (queryAssistService: QueryAssistCommonExport) => {
   const mounted = useRef(false);
-  const [loading, setLoading] = useState(false);
+  const loading = useObservable(queryAssistService.loading$);
+  const setLoading = queryAssistService.updateLoading;
   const abortControllerRef = useRef<AbortController>();
   const { services } = useOpenSearchDashboards<IDataPluginServices>();
 

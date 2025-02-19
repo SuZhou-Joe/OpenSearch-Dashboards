@@ -6,20 +6,22 @@
 import { EuiFieldText, EuiIcon, EuiOutsideClickDetector, EuiPortal } from '@elastic/eui';
 import { i18n } from '@osd/i18n';
 import React, { useMemo, useState } from 'react';
+import { useObservable } from 'react-use';
 import { PersistedLog, QuerySuggestionTypes } from '../../../../data/public';
 import assistantMark from '../../assets/sparkle_mark.svg';
 import { getData } from '../../services';
 import { AgentError } from '../utils';
 import { WarningBadge } from './warning_badge';
+import { QueryAssistServiceSetup } from '../../services/query_assist';
 
 interface QueryAssistInputProps {
   inputRef: React.RefObject<HTMLInputElement>;
   persistedLog: PersistedLog;
   isDisabled: boolean;
-  initialValue?: string;
   selectedIndex?: string;
   previousQuestion?: string;
   error?: AgentError;
+  queryAssistService: QueryAssistServiceSetup;
 }
 
 export const QueryAssistInput: React.FC<QueryAssistInputProps> = (props) => {
@@ -28,7 +30,8 @@ export const QueryAssistInput: React.FC<QueryAssistInputProps> = (props) => {
   } = getData();
   const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
   const [suggestionIndex, setSuggestionIndex] = useState<number | null>(null);
-  const [value, setValue] = useState(props.initialValue ?? '');
+  const value = useObservable(props.queryAssistService.question$, '');
+  const setValue = props.queryAssistService.updateQuestion;
 
   const sampleDataSuggestions = useMemo(() => {
     switch (props.selectedIndex) {

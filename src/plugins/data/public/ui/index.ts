@@ -43,6 +43,7 @@ export {
   DefaultInput,
   DQLBody,
   SingleLineInput,
+  DefaultInputProps,
 } from './query_editor';
 export {
   SearchBar,
