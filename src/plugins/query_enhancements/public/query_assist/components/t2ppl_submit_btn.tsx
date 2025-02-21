@@ -116,13 +116,12 @@ export const T2PPLSubmitBtn = (
 
   const onRunQuery = async () => {
     const timeRange = props.data.query.timefilter.timefilter.getTime();
-    services.data.query.queryString.setQuery({
-      query,
-      language: T2PPL_LANGUAGE_ID,
-      dataset: selectedDataset,
-    });
     props.submitQuery?.({
-      query: props.data.query.queryString.getQuery(),
+      query: {
+        query,
+        language: T2PPL_LANGUAGE_ID,
+        dataset: selectedDataset,
+      },
       dateRange: timeRange,
     });
   };
