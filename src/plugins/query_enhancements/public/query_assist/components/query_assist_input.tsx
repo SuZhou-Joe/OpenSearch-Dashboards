@@ -3,7 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EuiFieldText, EuiIcon, EuiOutsideClickDetector, EuiPortal } from '@elastic/eui';
+import {
+  EuiButtonEmpty,
+  EuiButtonIcon,
+  EuiCopy,
+  EuiFieldText,
+  EuiIcon,
+  EuiOutsideClickDetector,
+  EuiPanel,
+  EuiPortal,
+} from '@elastic/eui';
 import { i18n } from '@osd/i18n';
 import React, { useMemo, useState } from 'react';
 import { useObservable } from 'react-use';
@@ -32,6 +41,8 @@ export const QueryAssistInput: React.FC<QueryAssistInputProps> = (props) => {
   const [suggestionIndex, setSuggestionIndex] = useState<number | null>(null);
   const value = useObservable(props.queryAssistService.question$, '');
   const setValue = props.queryAssistService.updateQuestion;
+  const query = useObservable(props.queryAssistService.query$, '');
+  const editorReadOnly = useObservable(props.queryAssistService.editorReadOnly$, true);
 
   const sampleDataSuggestions = useMemo(() => {
     switch (props.selectedIndex) {
@@ -105,6 +116,48 @@ export const QueryAssistInput: React.FC<QueryAssistInputProps> = (props) => {
           append={<WarningBadge error={props.error} />}
           fullWidth
         />
+        <EuiPanel
+          paddingSize="s"
+          borderRadius="xl"
+          className={`queryAssist__buttonGroup queryAssist__buttonGroup__withquery__${!!query}`}
+        >
+          <EuiButtonIcon iconType="thumbsUp" size="xs" />
+          <EuiButtonIcon iconType="thumbsDown" size="xs" />
+          <EuiButtonEmpty
+            iconType="pencil"
+            size="xs"
+            className="queryAssist__buttonWithBorder"
+            onClick={() => {
+              if (query && editorReadOnly) {
+                props.queryAssistService.updateEditorReadOnly(false);
+              } else {
+                props.queryAssistService.reset();
+              }
+            }}
+          >
+            {query && editorReadOnly
+              ? i18n.translate('queryEnhancements.queryAssist.editQuery', {
+                  defaultMessage: 'Edit query',
+                })
+              : i18n.translate('queryEnhancements.queryAssist.resetPrompt', {
+                  defaultMessage: 'Reset prompt',
+                })}
+          </EuiButtonEmpty>
+          <EuiCopy textToCopy={query}>
+            {(copy) => (
+              <EuiButtonEmpty
+                iconType="copy"
+                size="xs"
+                className="queryAssist__buttonWithBorder"
+                onClick={copy}
+              >
+                {i18n.translate('queryEnhancements.queryAssist.copyQuery', {
+                  defaultMessage: 'Copy query',
+                })}
+              </EuiButtonEmpty>
+            )}
+          </EuiCopy>
+        </EuiPanel>
         <EuiPortal>
           <SuggestionsComponent
             show={isSuggestionsVisible}

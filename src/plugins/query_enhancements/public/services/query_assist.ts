@@ -17,6 +17,9 @@ export interface QueryAssistCommonExport {
   updateLoading: (loading: boolean) => void;
   query$: BehaviorSubject<string>;
   updateQuery: (query: string) => void;
+  editorReadOnly$: BehaviorSubject<boolean>;
+  updateEditorReadOnly: (readOnly: boolean) => void;
+  reset: () => void;
 }
 
 export type QueryAssistCallOutType =
@@ -37,6 +40,7 @@ export class QueryAssistService {
   private agentError$ = new BehaviorSubject<AgentError | undefined>(undefined);
   private loading$ = new BehaviorSubject<boolean>(false);
   private query$ = new BehaviorSubject<string>('');
+  private editorReadOnly$ = new BehaviorSubject<boolean>(true);
   private commonExport(): QueryAssistCommonExport {
     return {
       question$: this.question$,
@@ -49,7 +53,18 @@ export class QueryAssistService {
       updateLoading: (loading: boolean) => this.loading$.next(loading),
       query$: this.query$,
       updateQuery: (query: string) => this.query$.next(query),
+      editorReadOnly$: this.editorReadOnly$,
+      updateEditorReadOnly: (readOnly: boolean) => this.editorReadOnly$.next(readOnly),
+      reset: () => this.reset(),
     };
+  }
+  reset() {
+    this.commonExport().updateQuestion('');
+    this.commonExport().updateCalloutType(undefined);
+    this.commonExport().updateAgentError(undefined);
+    this.commonExport().updateLoading(false);
+    this.commonExport().updateQuery('');
+    this.commonExport().updateEditorReadOnly(true);
   }
   setup() {
     return this.commonExport();

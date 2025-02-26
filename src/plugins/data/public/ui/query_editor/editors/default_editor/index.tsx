@@ -22,6 +22,7 @@ export interface DefaultInputProps extends React.JSX.IntrinsicAttributes {
   headerRef?: React.RefObject<HTMLDivElement>;
   provideCompletionItems: monaco.languages.CompletionItemProvider['provideCompletionItems'];
   queryStatus?: QueryStatus;
+  options?: monaco.editor.IEditorConstructionOptions;
 }
 
 export const DefaultInput: React.FC<DefaultInputProps> = ({
@@ -33,6 +34,7 @@ export const DefaultInput: React.FC<DefaultInputProps> = ({
   headerRef,
   provideCompletionItems,
   queryStatus,
+  options,
 }) => {
   return (
     <div className="defaultEditor" data-test-subj="osdQueryEditor__multiLine">
@@ -56,6 +58,7 @@ export const DefaultInput: React.FC<DefaultInputProps> = ({
           lineDecorationsWidth: 0,
           lineNumbersMinChars: 1,
           wordBasedSuggestions: false,
+          ...options,
         }}
         suggestionProvider={{
           provideCompletionItems,

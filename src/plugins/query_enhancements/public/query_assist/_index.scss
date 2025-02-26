@@ -4,6 +4,12 @@
  */
 
 .queryAssist {
+  &:hover {
+    .queryAssist__buttonGroup__withquery__true {
+      display: block;
+    }
+  }
+
   &.queryAssist__summary {
     margin-top: $euiSizeXS;
   }
@@ -31,6 +37,24 @@
 
   .queryAssist__input {
     text-overflow: ellipsis;
+  }
+
+  .queryAssist__inputWrapper {
+    position: relative;
+  }
+
+  .queryAssist__buttonGroup {
+    position: absolute;
+    right: $euiSizeXL;
+    bottom: 0;
+    transform: translateY(50%);
+    z-index: 100;
+    display: none;
+  }
+
+  .queryAssist__buttonWithBorder {
+    border-left: $euiBorderThin;
+    margin-left: $euiSizeXS;
   }
 }
 

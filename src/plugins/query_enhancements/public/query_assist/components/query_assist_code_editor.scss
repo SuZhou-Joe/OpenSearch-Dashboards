@@ -1,0 +1,9 @@
+.queryAssist_codeEditor_wrapper_readOnly_true {
+  pointer-events: none; /* Prevent interaction */
+  .monaco-editor,
+  .monaco-editor-background,
+  .monaco-editor .inputarea.ime-input,
+  .monaco-editor .decorationsOverviewRuler {
+    background-color: $euiFormBackgroundDisabledColor;
+  }
+}
