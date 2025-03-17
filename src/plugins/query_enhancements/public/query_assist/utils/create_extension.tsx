@@ -146,6 +146,12 @@ export const createQueryAssistExtension = (
           <QueryAssistBanner
             dependencies={dependencies}
             languages={config.supportedLanguages.map((conf) => conf.language)}
+            onClick={() => {
+              dependencies.onSelectLanguage(
+                config.supportedLanguages.map((conf) => conf.language)[0]
+              );
+              if (dependencies.isCollapsed) dependencies.setIsCollapsed(false);
+            }}
           />
         </QueryAssistWrapper>
       );
