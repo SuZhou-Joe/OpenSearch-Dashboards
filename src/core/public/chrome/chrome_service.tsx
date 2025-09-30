@@ -492,6 +492,8 @@ export class ChromeService {
 
       setHelpSupportUrl: (url: string) => helpSupportUrl$.next(url),
 
+      setIsNavDrawerLocked,
+
       getIsNavDrawerLocked$: () => getIsNavDrawerLocked$,
 
       getCustomNavLink$: () => customNavLink$.pipe(takeUntil(this.stop$)),
@@ -691,6 +693,8 @@ export interface ChromeStart {
    * Set or unset the global banner component
    */
   setGlobalBanner(banner?: ChromeGlobalBanner): void;
+
+  setIsNavDrawerLocked(isLocked: boolean): void;
 }
 
 /** @internal */

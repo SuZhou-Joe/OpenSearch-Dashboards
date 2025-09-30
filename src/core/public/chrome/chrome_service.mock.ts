@@ -115,6 +115,7 @@ const createStartContractMock = () => {
     setCustomNavLink: jest.fn(),
     getGlobalBanner$: jest.fn(),
     setGlobalBanner: jest.fn(),
+    setIsNavDrawerLocked: jest.fn(),
   };
   startContract.navLinks.getAll.mockReturnValue([]);
   startContract.getIsVisible$.mockReturnValue(new BehaviorSubject(false));
