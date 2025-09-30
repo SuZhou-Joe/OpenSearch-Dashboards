@@ -1,0 +1,506 @@
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* eslint-disable no-console */
+
+import { BehaviorSubject, Observable } from 'rxjs';
+import { CoreSetup, CoreStart } from '../../../../core/public';
+import {
+  ContextProviderSetupDeps,
+  ContextProviderStartDeps,
+  StaticContext,
+  DynamicContext,
+  ContextContributor,
+  GlobalInteraction,
+} from '../types';
+
+// Define singleton context types that should only have one instance
+const SINGLETON_CONTEXT_TYPES = new Set(['time_range', 'query', 'index_pattern', 'app_state']);
+
+export class ContextCaptureService {
+  private staticContext$ = new BehaviorSubject<StaticContext | null>(null);
+  private dynamicContext$ = new BehaviorSubject<DynamicContext | null>(null);
+  private coreStart?: CoreStart;
+  private pluginsStart?: ContextProviderStartDeps;
+  private contextContributors = new Map<string, ContextContributor>();
+
+  constructor(private coreSetup: CoreSetup, private pluginsSetup: ContextProviderSetupDeps) {}
+
+  public setup(): void {}
+
+  public start(core: CoreStart, plugins: ContextProviderStartDeps): void {
+    this.coreStart = core;
+    this.pluginsStart = plugins;
+
+    // Subscribe to application changes
+    core.application.currentAppId$.subscribe((appId) => {
+      if (appId) {
+        this.captureStaticContext(appId);
+      }
+    });
+
+    // 🔑 NEW: Monitor URL changes for automatic context refresh
+    this.setupUrlMonitoring();
+  }
+
+  /**
+   * Monitor URL changes to automatically refresh context when parameters change
+   * This handles cases like time range changes, filter updates, etc. within the same app
+   */
+  private setupUrlMonitoring(): void {
+    let lastUrl = window.location.href;
+    let lastHash = window.location.hash;
+
+    // Monitor both popstate (back/forward) and hashchange events
+    const handleUrlChange = () => {
+      const currentUrl = window.location.href;
+      const currentHash = window.location.hash;
+
+      if (currentUrl !== lastUrl || currentHash !== lastHash) {
+        // Get current app and refresh context
+        const currentAppId = window.location.pathname.split('/app/')[1]?.split('/')[0];
+        if (currentAppId) {
+          this.captureStaticContext(currentAppId);
+        }
+
+        lastUrl = currentUrl;
+        lastHash = currentHash;
+      }
+    };
+
+    // Listen for browser navigation events
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+
+    // Also monitor for programmatic URL changes using a polling approach
+    // This catches changes made by OpenSearch Dashboards' URL state management
+    const urlCheckInterval = setInterval(() => {
+      handleUrlChange();
+    }, 1000); // Check every second
+
+    // Store cleanup function
+    (this as any).urlMonitoringCleanup = () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+      if (urlCheckInterval) {
+        clearInterval(urlCheckInterval);
+      }
+    };
+  }
+
+  public getStaticContext$(): Observable<StaticContext | null> {
+    return this.staticContext$.asObservable();
+  }
+
+  public getDynamicContext$(): Observable<DynamicContext | null> {
+    return this.dynamicContext$.asObservable();
+  }
+
+  public captureDynamicContext(trigger: string, data: any): void {
+    // Find all contributors that are interested in this trigger
+    const interestedContributors = Array.from(this.contextContributors.values()).filter(
+      (contributor) => {
+        return contributor.contextTriggerActions?.includes(trigger);
+      }
+    );
+
+    // Route the trigger to each interested contributor
+    interestedContributors.forEach((contributor) => {
+      if (contributor.captureDynamicContext) {
+        try {
+          const contributorContext = contributor.captureDynamicContext(trigger, data);
+
+          const dynamicContext: DynamicContext = {
+            appId: contributor.appId,
+            trigger,
+            timestamp: Date.now(),
+            data: contributorContext,
+          };
+
+          this.dynamicContext$.next(dynamicContext);
+        } catch (error) {
+          console.error(`❌ Error capturing dynamic context for ${contributor.appId}:`, error);
+        }
+      }
+    });
+
+    // If no contributors are interested, still emit the raw context
+    if (interestedContributors.length === 0) {
+      const dynamicContext: DynamicContext = {
+        trigger,
+        timestamp: Date.now(),
+        data,
+      };
+      this.dynamicContext$.next(dynamicContext);
+    }
+  }
+
+  public captureGlobalInteraction(interaction: GlobalInteraction): void {
+    // Route to appropriate contributor based on app
+    const contributor = this.contextContributors.get(interaction.app || 'unknown');
+    if (contributor && contributor.handleGlobalInteraction) {
+      try {
+        contributor.handleGlobalInteraction(interaction);
+      } catch (error) {
+        console.error(
+          `❌ Error in ${contributor.appId} contributor handling global interaction:`,
+          error
+        );
+      }
+    }
+
+    // Also emit as dynamic context for backward compatibility
+    const dynamicContext: DynamicContext = {
+      appId: interaction.app,
+      trigger: interaction.interactionType || 'GLOBAL_CLICK',
+      timestamp: interaction.timestamp,
+      data: interaction,
+    };
+
+    this.dynamicContext$.next(dynamicContext);
+  }
+
+  public registerContextContributor(contributor: ContextContributor): void {
+    this.contextContributors.set(contributor.appId, contributor);
+  }
+
+  public unregisterContextContributor(appId: string): void {
+    this.contextContributors.delete(appId);
+  }
+
+  /**
+   * Deduplicates context data, ensuring singleton types only have one instance
+   */
+  private deduplicateContext(contextData: Record<string, any>): Record<string, any> {
+    const deduplicated: Record<string, any> = {};
+
+    // Handle singleton context types
+    Object.keys(contextData).forEach((key) => {
+      const contextType = this.inferContextType(key);
+
+      if (contextType && SINGLETON_CONTEXT_TYPES.has(contextType)) {
+        // For singleton types, always replace the existing value
+        deduplicated[key] = contextData[key];
+      } else {
+        // For non-singleton types, preserve the value
+        deduplicated[key] = contextData[key];
+      }
+    });
+
+    return deduplicated;
+  }
+
+  /**
+   * Infers the context type from the key name
+   */
+  private inferContextType(key: string): string | null {
+    if (key === 'timeRange' || key === 'dataContext.timeRange') return 'time_range';
+    if (key === 'query' || key === 'dataContext.query') return 'query';
+    if (key === 'indexPatternId' || key === 'indexPattern') return 'index_pattern';
+    if (key === 'appId' || key === 'appState') return 'app_state';
+    if (key.includes('filter')) return 'filters';
+    if (key.includes('dashboard')) return 'dashboard';
+    if (key.includes('visualization')) return 'visualization';
+    if (key.includes('document')) return 'document';
+    return null;
+  }
+
+  private async captureStaticContext(appId: string): Promise<void> {
+    if (!this.coreStart || !this.pluginsStart) {
+      console.warn('Services not available for context capture');
+      return;
+    }
+
+    let contextData: Record<string, any> = {
+      appId,
+      url: window.location.href,
+      pathname: window.location.pathname,
+      search: window.location.search,
+    };
+
+    try {
+      // Check if there's a registered context contributor for this app
+      let contributor = this.contextContributors.get(appId);
+
+      // 🔧 FIX: Handle app ID variations (e.g., 'explore/logs' -> 'explore')
+      if (!contributor && appId.includes('/')) {
+        const baseAppId = appId.split('/')[0];
+        contributor = this.contextContributors.get(baseAppId);
+      }
+
+      // If still no exact match, check if any contributor can handle this app
+      if (!contributor) {
+        for (const [contributorAppId, contributorInstance] of this.contextContributors.entries()) {
+          if (
+            typeof contributorInstance.canHandleApp === 'function' &&
+            contributorInstance.canHandleApp(appId)
+          ) {
+            contributor = contributorInstance;
+            break;
+          }
+        }
+      }
+
+      if (contributor && contributor.captureStaticContext) {
+        const contributorContext = await contributor.captureStaticContext();
+        contextData = { ...contextData, ...contributorContext };
+      } else {
+        // Fallback to built-in app-specific context
+        switch (appId) {
+          case 'dashboards':
+            contextData = { ...contextData, ...(await this.captureDashboardContext()) };
+            break;
+          case 'discover':
+            contextData = { ...contextData, ...(await this.captureDiscoverContext()) };
+            break;
+          default:
+            contextData.message = `Generic context for app: ${appId}`;
+        }
+      }
+
+      // Capture common data context
+      const dataContext = await this.captureDataContext();
+      contextData = { ...contextData, ...dataContext };
+    } catch (error) {
+      console.error('Error capturing context:', error);
+      contextData.error = error.message;
+    }
+
+    // Apply deduplication
+    const deduplicatedData = this.deduplicateContext(contextData);
+
+    const staticContext: StaticContext = {
+      appId,
+      timestamp: Date.now(),
+      data: deduplicatedData,
+    };
+
+    this.staticContext$.next(staticContext);
+    // 🔧 FIX: Emit custom event to notify AI assistant of static context updates
+    window.dispatchEvent(
+      new CustomEvent('staticContextUpdated', {
+        detail: { appId, timestamp: Date.now(), contextData: deduplicatedData },
+      })
+    );
+  }
+
+  private async captureDashboardContext(): Promise<Record<string, any>> {
+    try {
+      // Extract dashboard ID from URL
+      const urlParts = window.location.pathname.split('/');
+      const dashboardIndex = urlParts.indexOf('dashboard');
+      const dashboardId =
+        dashboardIndex !== -1 && urlParts[dashboardIndex + 1] ? urlParts[dashboardIndex + 1] : null;
+
+      const context: Record<string, any> = {
+        type: 'dashboard',
+        dashboardId,
+      };
+
+      if (dashboardId && this.coreStart) {
+        try {
+          // Try to get dashboard from saved objects
+          const dashboard = await this.coreStart.savedObjects.client.get('dashboard', dashboardId);
+          const attributes = dashboard.attributes as any;
+          context.dashboard = {
+            title: attributes.title,
+            description: attributes.description,
+            panelsJSON: attributes.panelsJSON,
+          };
+        } catch (error) {
+          console.warn('Could not fetch dashboard details:', error);
+          context.dashboardError = error.message;
+        }
+      }
+
+      return context;
+    } catch (error) {
+      console.error('Error capturing dashboard context:', error);
+      return { type: 'dashboard', error: error.message };
+    }
+  }
+
+  private async captureDiscoverContext(): Promise<Record<string, any>> {
+    try {
+      const context: Record<string, any> = {
+        type: 'discover',
+      };
+
+      // Try to get current index pattern from URL or state
+      const urlParams = new URLSearchParams(window.location.search);
+      const indexPatternId = urlParams.get('_a')
+        ? this.extractIndexPatternFromState(urlParams.get('_a'))
+        : null;
+
+      if (indexPatternId) {
+        context.indexPatternId = indexPatternId;
+      }
+
+      return context;
+    } catch (error) {
+      console.error('Error capturing discover context:', error);
+      return { type: 'discover', error: error.message };
+    }
+  }
+
+  private extractIndexPatternFromState(stateParam: string | null): string | null {
+    if (!stateParam) return null;
+
+    try {
+      const decoded = decodeURIComponent(stateParam);
+      const state = JSON.parse(decoded);
+      return state.index || null;
+    } catch (error) {
+      console.warn('Could not parse state parameter:', error);
+      return null;
+    }
+  }
+
+  private async captureDataContext(): Promise<Record<string, any>> {
+    if (!this.pluginsStart) return {};
+
+    try {
+      const dataContext: Record<string, any> = {};
+
+      // Capture current time range
+      const timeRange = this.pluginsStart.data.query.timefilter.timefilter.getTime();
+      dataContext.timeRange = timeRange;
+
+      // Capture current filters
+      const filters = this.pluginsStart.data.query.filterManager.getFilters();
+      dataContext.filters = filters.map((filter) => ({
+        meta: filter.meta,
+        query: filter.query,
+      }));
+
+      // Capture current query
+      const currentQuery = this.pluginsStart.data.query.queryString.getQuery();
+      dataContext.query = currentQuery;
+
+      return { dataContext };
+    } catch (error) {
+      console.error('Error capturing data context:', error);
+      return { dataContextError: error.message };
+    }
+  }
+
+  public async executeAction(actionType: string, params: any): Promise<any> {
+    if (!this.coreStart || !this.pluginsStart) {
+      throw new Error('Services not available for action execution');
+    }
+
+    try {
+      switch (actionType) {
+        case 'ADD_FILTER':
+          return this.addFilter(params);
+        case 'REMOVE_FILTER':
+          return this.removeFilter(params);
+        case 'CHANGE_TIME_RANGE':
+          return this.changeTimeRange(params);
+        case 'REFRESH_DATA':
+          return this.refreshData();
+        case 'NAVIGATE_TO_DISCOVER':
+          return this.navigateToDiscover(params);
+        case 'NAVIGATE_TO_DASHBOARD':
+          return this.navigateToDashboard(params);
+        default:
+          throw new Error(`Unknown action type: ${actionType}`);
+      }
+    } catch (error) {
+      console.error(`Error executing action ${actionType}:`, error);
+      throw error;
+    }
+  }
+
+  private async addFilter(params: any): Promise<any> {
+    if (!params.field || !params.value) {
+      throw new Error('Filter requires field and value');
+    }
+
+    const filter = {
+      meta: {
+        alias: null,
+        disabled: false,
+        negate: false,
+        key: params.field,
+        type: 'phrase',
+      },
+      query: {
+        match_phrase: {
+          [params.field]: params.value,
+        },
+      },
+    };
+
+    this.pluginsStart!.data.query.filterManager.addFilters([filter]);
+    return { success: true, filter };
+  }
+
+  private async removeFilter(params: any): Promise<any> {
+    const filters = this.pluginsStart!.data.query.filterManager.getFilters();
+    const updatedFilters = filters.filter((filter, index) => {
+      if (params.index !== undefined) {
+        return index !== params.index;
+      }
+      if (params.field) {
+        return filter.meta?.key !== params.field;
+      }
+      return true;
+    });
+
+    this.pluginsStart!.data.query.filterManager.setFilters(updatedFilters);
+    return { success: true, removedCount: filters.length - updatedFilters.length };
+  }
+
+  private async changeTimeRange(params: any): Promise<any> {
+    if (!params.from || !params.to) {
+      throw new Error('Time range requires from and to parameters');
+    }
+
+    this.pluginsStart!.data.query.timefilter.timefilter.setTime({
+      from: params.from,
+      to: params.to,
+    });
+
+    return { success: true, timeRange: { from: params.from, to: params.to } };
+  }
+
+  private async refreshData(): Promise<any> {
+    // Trigger a refresh by updating the query state
+    const currentQuery = this.pluginsStart!.data.query.queryString.getQuery();
+    this.pluginsStart!.data.query.queryString.setQuery(currentQuery, true);
+    return { success: true, timestamp: Date.now() };
+  }
+
+  private async navigateToDiscover(params: any): Promise<any> {
+    await this.coreStart!.application.navigateToApp('discover', {
+      path: params.path || '',
+    });
+
+    return { success: true, destination: 'discover' };
+  }
+
+  private async navigateToDashboard(params: any): Promise<any> {
+    const path = params.dashboardId ? `/${params.dashboardId}` : '';
+    await this.coreStart!.application.navigateToApp('dashboards', {
+      path,
+    });
+
+    return { success: true, destination: 'dashboards' };
+  }
+
+  /**
+   * Cleanup method to remove URL monitoring listeners
+   */
+  public stop(): void {
+    // Cleanup URL monitoring
+    if ((this as any).urlMonitoringCleanup) {
+      (this as any).urlMonitoringCleanup();
+    }
+
+    // Clear context contributors
+    this.contextContributors.clear();
+  }
+}

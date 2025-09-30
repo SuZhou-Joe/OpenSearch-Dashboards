@@ -41,6 +41,7 @@
           - application
             - [Hooks](../src/plugins/console/public/application/hooks/README.md)
       - [Content_management](../src/plugins/content_management/README.md)
+      - [Context_provider](../src/plugins/context_provider/README.md)
       - [Csp_handler](../src/plugins/csp_handler/README.md)
       - [Dashboard](../src/plugins/dashboard/README.md)
       - [Data](../src/plugins/data/README.md)
