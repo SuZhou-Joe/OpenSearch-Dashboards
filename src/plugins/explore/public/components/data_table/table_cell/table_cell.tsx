@@ -11,6 +11,7 @@ import { i18n } from '@osd/i18n';
 import { DocViewFilterFn, OpenSearchSearchHit } from '../../../types/doc_views_types';
 import { useDatasetContext } from '../../../application/context';
 import { isOnTracesPage, isSpanIdColumn, SpanIdLink } from './trace_utils/trace_utils';
+import { TriggerPopover } from '../../trigger_popover/trigger_popover';
 
 export interface ITableCellProps {
   columnId: string;
@@ -87,6 +88,9 @@ export const TableCellUI = ({
   return isTimeField ? (
     <td data-test-subj="docTableField" className="exploreDocTableCell eui-textNoWrap">
       {content}
+      <div>
+        <TriggerPopover iconType="notebookApp" log={rowData._source} />
+      </div>
     </td>
   ) : (
     <td

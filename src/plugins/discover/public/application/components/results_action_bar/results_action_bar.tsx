@@ -12,6 +12,7 @@ import { OpenSearchSearchHit } from '../../doc_views/doc_views_types';
 import { DiscoverDownloadCsv } from '../download_csv';
 import { IndexPattern } from '../../../../../data/common';
 import { ACTION_BAR_BUTTONS_CONTAINER_ID } from '../../../../../data/public';
+import { TriggerPopover } from '../trigger_popover/trigger_popover';
 
 export interface DiscoverResultsActionBarProps {
   hits?: number;
@@ -56,6 +57,9 @@ export const DiscoverResultsActionBar = ({
               <DiscoverDownloadCsv indexPattern={indexPattern} rows={rows} hits={hits} />
             </EuiFlexItem>
           ) : null}
+          <EuiFlexItem grow={false}>
+            <TriggerPopover iconType="lensApp" />
+          </EuiFlexItem>
         </EuiFlexGroup>
       </EuiFlexItem>
       <EuiFlexItem grow={false}>

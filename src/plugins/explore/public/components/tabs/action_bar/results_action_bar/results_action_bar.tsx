@@ -18,6 +18,7 @@ import { SaveAndAddButtonWithModal } from '../../../visualizations/add_to_dashbo
 import { selectActiveTabId } from '../../../../application/utils/state_management/selectors';
 import { PatternsSettingsPopoverButton } from '../patterns_settings/patterns_settings_popover_button';
 import { getVisualizationBuilder } from '../../../visualizations/visualization_builder';
+import { TriggerPopover } from '../../../trigger_popover/trigger_popover';
 
 export interface DiscoverResultsActionBarProps {
   hits?: number;
@@ -70,6 +71,9 @@ export const DiscoverResultsActionBar = ({
               rows={rows}
               elapsedMs={elapsedMs}
             />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <TriggerPopover iconType="notebookApp" />
           </EuiFlexItem>
           {/* TODO: Fix data consistency issue with inspection panel */}
           {/* <EuiFlexItem grow={false}>

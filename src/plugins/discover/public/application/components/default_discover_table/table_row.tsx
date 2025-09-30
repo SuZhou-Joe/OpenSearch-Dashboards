@@ -19,7 +19,8 @@ import { fetchSourceTypeDataCell } from '../data_grid/data_grid_table_cell_value
 import { DocViewer } from '../doc_viewer/doc_viewer';
 import { DocViewerLinks } from '../doc_viewer_links/doc_viewer_links';
 import { TableCell } from './table_cell';
-
+import { Query } from '../../../../../data/common';
+import { TriggerPopover } from '../trigger_popover/trigger_popover';
 export interface TableRowProps {
   row: OpenSearchSearchHit;
   columns: string[];
@@ -29,6 +30,7 @@ export interface TableRowProps {
   onFilter?: DocViewFilterFn;
   onClose?: () => void;
   isShortDots: boolean;
+  query: Query;
 }
 
 const TableRowUI = ({
@@ -108,20 +110,25 @@ const TableRowUI = ({
 
         if (fieldInfo?.filterable === false) {
           return (
-            <td
-              key={colName}
-              data-test-subj="docTableField"
-              className={`osdDocTableCell ${
-                indexPattern.timeFieldName === colName
-                  ? 'eui-textNoWrap'
-                  : 'eui-textBreakAll eui-textBreakWord'
-              }`}
-            >
-              <div className="truncate-by-height">
-                {/* eslint-disable-next-line react/no-danger */}
-                <span dangerouslySetInnerHTML={{ __html: sanitizedCellValue }} />
-              </div>
-            </td>
+            <>
+              <td
+                key={colName}
+                data-test-subj="docTableField"
+                className={`osdDocTableCell ${
+                  indexPattern.timeFieldName === colName
+                    ? 'eui-textNoWrap'
+                    : 'eui-textBreakAll eui-textBreakWord'
+                }`}
+              >
+                <div className="truncate-by-height">
+                  {/* eslint-disable-next-line react/no-danger */}
+                  <span dangerouslySetInnerHTML={{ __html: sanitizedCellValue }} />
+                </div>
+                <div>
+                  <TriggerPopover iconType="notebookApp" log={row._source} />
+                </div>
+              </td>
+            </>
           );
         }
 
