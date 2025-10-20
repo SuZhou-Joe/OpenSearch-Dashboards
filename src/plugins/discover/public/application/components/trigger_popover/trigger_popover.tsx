@@ -67,7 +67,7 @@ export const TriggerPopover = ({
 
   const handleInvestigation = async () => {
     const id = await createNotebook('Discover investigation');
-    const path = `#${id}`;
+    const path = `#agentic/${id}`;
     core.application.navigateToApp('investigation-notebooks', {
       path,
     });
