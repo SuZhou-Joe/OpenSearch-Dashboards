@@ -123,21 +123,19 @@ const ChatWindowContent = React.forwardRef<ChatWindowInstance, ChatWindowProps>(
     setIsStreaming(true);
 
     try {
-      // Add additional messages to timeline first if provided
+      // Prepare additional messages for sending (but don't add to timeline yet)
       const additionalMessages = options?.messages ?? [];
-      if (additionalMessages.length > 0) {
-        setTimeline((prev) => [...prev, ...additionalMessages]);
-      }
-      
+
       // Merge additional messages with current timeline for sending
       const messagesToSend = [...timeline, ...additionalMessages];
-      
+
       const { observable, userMessage } = await chatService.sendMessage(
         messageContent,
         messagesToSend
       );
 
-      // Add user message immediately to timeline
+      // Add the final merged user message to timeline
+      // (chat_service already merged any additional messages with the text)
       const timelineUserMessage: UserMessage = {
         id: userMessage.id,
         role: 'user',

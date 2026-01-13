@@ -3,11 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import ReactDOM from 'react-dom';
 import { i18n } from '@osd/i18n';
 import { EuiIconType } from '@elastic/eui/src/components/icon/icon';
-import { EuiLoadingSpinner, EuiText, EuiSpacer } from '@elastic/eui';
 import { get } from 'lodash';
 import html2canvas from 'html2canvas';
 import { EmbeddableContext, IEmbeddable } from '../../../embeddable/public';
@@ -16,35 +13,11 @@ import { CoreStart } from '../../../../core/public';
 import { ContextProviderStart } from '../../../context_provider/public';
 import { ChatPluginStart } from '../../../chat/public';
 import { SavedExplore } from '../saved_explore';
-import './ask_ai_embeddable_action.scss';
 
 interface DiscoverVisualizationEmbeddable extends IEmbeddable {
   savedExplore: SavedExplore;
   node: HTMLElement;
 }
-
-// Loading overlay component
-const LoadingOverlay: React.FC = () => (
-  <div className="askAiEmbeddableLoadingOverlay">
-    <div className="eui-textCenter">
-      <EuiLoadingSpinner size="xl" />
-      <EuiSpacer size="m" />
-      <EuiText size="s">
-        <strong>
-          {i18n.translate('explore.actions.askAIEmbeddable.generatingSummary', {
-            defaultMessage: 'Generating visualization summary...',
-          })}
-        </strong>
-      </EuiText>
-      <EuiSpacer size="xs" />
-      <EuiText size="xs" color="subdued">
-        {i18n.translate('explore.actions.askAIEmbeddable.pleaseWait', {
-          defaultMessage: 'This may take a few moments',
-        })}
-      </EuiText>
-    </div>
-  </div>
-);
 
 export const ASK_AI_EMBEDDABLE_ACTION = 'ASK_AI_EMBEDDABLE_ACTION';
 
@@ -110,51 +83,17 @@ export class AskAIEmbeddableAction implements Action<EmbeddableContext> {
     const query = visEmbeddable.savedExplore.searchSource.getFields().query;
     const filters = input.filters;
 
-    // Create loading overlay container
-    const overlayContainer = document.createElement('div');
-    const embeddableContainer = visEmbeddable.node.parentElement;
-    if (embeddableContainer) {
-      embeddableContainer.style.position = 'relative';
-      embeddableContainer.appendChild(overlayContainer);
-      ReactDOM.render(<LoadingOverlay />, overlayContainer);
-    }
-
     try {
       // Capture visualization as base64 image
       let visualizationBase64 = '';
-      // let visualizationSummary = '';
 
-      try {
-        const canvas = await html2canvas(visEmbeddable.node, {
-          backgroundColor: '#ffffff',
-          logging: false,
-          useCORS: true,
-        });
-        // Use JPEG format with low quality to save tokens
-        visualizationBase64 = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-
-        // Call backend API to get visualization summary
-        // const response = await this.core.http.post('/api/visualizations/summary', {
-        //   body: JSON.stringify({
-        //     visualization: visualizationBase64,
-        //   }),
-        //   query: {
-        //     dataSourceId: query?.dataset?.dataSource?.id,
-        //   },
-        // });
-
-        // visualizationSummary = response.summary || '';
-      } catch (captureError) {
-        // Log error for debugging but continue with empty summary
-        // eslint-disable-next-line no-console
-        console.warn('Failed to capture visualization or get summary:', captureError);
-      } finally {
-        // Remove loading overlay
-        if (overlayContainer && embeddableContainer) {
-          ReactDOM.unmountComponentAtNode(overlayContainer);
-          embeddableContainer.removeChild(overlayContainer);
-        }
-      }
+      const canvas = await html2canvas(visEmbeddable.node, {
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+      });
+      // Use JPEG format with low quality to save tokens
+      visualizationBase64 = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
 
       // Create context for the assistant with summary
       const visualizationContext = {
@@ -165,7 +104,6 @@ export class AskAIEmbeddableAction implements Action<EmbeddableContext> {
         query: query?.query,
         filters,
         index: query?.dataset?.title,
-        // summary: visualizationSummary,
       };
 
       // Add context to the context provider
@@ -203,12 +141,6 @@ export class AskAIEmbeddableAction implements Action<EmbeddableContext> {
         );
       }
     } catch (error) {
-      // Remove loading overlay on error
-      if (overlayContainer && embeddableContainer) {
-        ReactDOM.unmountComponentAtNode(overlayContainer);
-        embeddableContainer.removeChild(overlayContainer);
-      }
-
       this.core.notifications.toasts.addDanger({
         title: i18n.translate('explore.actions.askAIEmbeddable.errorTitle', {
           defaultMessage: 'Failed to add visualization context',
