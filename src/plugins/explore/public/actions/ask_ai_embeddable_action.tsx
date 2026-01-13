@@ -122,7 +122,7 @@ export class AskAIEmbeddableAction implements Action<EmbeddableContext> {
     try {
       // Capture visualization as base64 image
       let visualizationBase64 = '';
-      let visualizationSummary = '';
+      // let visualizationSummary = '';
 
       try {
         const canvas = await html2canvas(visEmbeddable.node, {
@@ -134,16 +134,16 @@ export class AskAIEmbeddableAction implements Action<EmbeddableContext> {
         visualizationBase64 = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
 
         // Call backend API to get visualization summary
-        const response = await this.core.http.post('/api/visualizations/summary', {
-          body: JSON.stringify({
-            visualization: visualizationBase64,
-          }),
-          query: {
-            dataSourceId: query?.dataset?.dataSource?.id,
-          },
-        });
+        // const response = await this.core.http.post('/api/visualizations/summary', {
+        //   body: JSON.stringify({
+        //     visualization: visualizationBase64,
+        //   }),
+        //   query: {
+        //     dataSourceId: query?.dataset?.dataSource?.id,
+        //   },
+        // });
 
-        visualizationSummary = response.summary || '';
+        // visualizationSummary = response.summary || '';
       } catch (captureError) {
         // Log error for debugging but continue with empty summary
         // eslint-disable-next-line no-console
@@ -165,7 +165,7 @@ export class AskAIEmbeddableAction implements Action<EmbeddableContext> {
         query: query?.query,
         filters,
         index: query?.dataset?.title,
-        summary: visualizationSummary,
+        // summary: visualizationSummary,
       };
 
       // Add context to the context provider
@@ -181,14 +181,26 @@ export class AskAIEmbeddableAction implements Action<EmbeddableContext> {
         });
       }
 
-      // Try to open the chat if available
+      // Send visualization screenshot to chat
       if (this.chat?.chatService) {
-        // Open the chat panel
+        // Create a message with the visualization image following AG-UI protocol
+        const imageMessage = {
+          role: 'user' as const,
+          id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+          content: [
+            {
+              type: 'binary' as const,
+              mimeType: 'image/jpeg',
+              data: visualizationBase64,
+            },
+          ],
+        };
+
+        // sendMessageWithWindow will open the chat window and send the message
         await this.chat.chatService.sendMessageWithWindow(
           'Give me a summary for the selected visualization',
-          []
+          [imageMessage]
         );
-        await this.chat.chatService.openWindow();
       }
     } catch (error) {
       // Remove loading overlay on error
