@@ -111,6 +111,9 @@ describe('ChatPlugin', () => {
         commandRegistry: expect.objectContaining({
           registerCommand: expect.any(Function),
         }),
+        toolResultRendererRegistry: expect.objectContaining({
+          registerToolResultRenderer: expect.any(Function),
+        }),
       });
     });
 

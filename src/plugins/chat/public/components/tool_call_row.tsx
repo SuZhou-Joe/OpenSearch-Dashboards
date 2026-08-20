@@ -498,7 +498,14 @@ export const ToolCallRow: React.FC<ToolCallRowProps> = ({
                 }),
             },
           })}
-        {!isError && toolCall.result && <ToolResultRenderer result={toolCall.result} />}
+        {!isError && toolCall.result && (
+          <ToolResultRenderer
+            result={toolCall.result}
+            toolName={toolCall.toolName}
+            args={toolCall.arguments}
+            status={toolCall.status}
+          />
+        )}
       </EuiPanel>
     </EuiAccordion>
   );

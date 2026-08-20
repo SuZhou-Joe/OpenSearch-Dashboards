@@ -17,6 +17,7 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@osd/i18n';
 import { Markdown } from '../../../opensearch_dashboards_react/public';
+import { ToolResultStatus, toolResultRendererRegistry } from '../services/tool_result_renderers';
 import './tool_result_renderer.scss';
 
 /**
@@ -172,6 +173,16 @@ const tryParseJSON = (text: string): any | null => {
 
 interface ToolResultRendererProps {
   result: string;
+  /**
+   * Name of the tool that produced this result. When provided and a renderer
+   * is registered for it, that renderer takes precedence over the built-in
+   * shape-guessing pipeline (unless it defers by returning null).
+   */
+  toolName?: string;
+  /** Raw, unparsed arguments string the tool was called with, if any. */
+  args?: string;
+  /** Execution status of the tool call. */
+  status?: ToolResultStatus;
 }
 
 /**
@@ -225,13 +236,30 @@ const MarkdownBlock: React.FC<{ markdown: string }> = ({ markdown }) => {
 };
 
 /**
- * Renders a tool call result. Tries each shape in turn and uses the first
- * match: JSON, a `{text=[...]}` or `{text={...}}` wrapper, "text + JSON",
- * a plain pipe-delimited table, markdown, or plain text as a last resort.
+ * Renders a tool call result.
+ *
+ * If a plugin has registered a renderer for `toolName`, that renderer is
+ * consulted first; it may return content to take over the result card, or
+ * return null/undefined to defer to the built-in renderer. The built-in
+ * renderer tries each shape in turn and uses the first match: JSON, a
+ * `{text=[...]}` or `{text={...}}` wrapper, "text + JSON", a plain
+ * pipe-delimited table, markdown, or plain text as a last resort.
  */
-export const ToolResultRenderer: React.FC<ToolResultRendererProps> = React.memo(({ result }) => {
-  return renderContent(result);
-});
+export const ToolResultRenderer: React.FC<ToolResultRendererProps> = React.memo(
+  ({ result, toolName, args, status = 'completed' }) => {
+    if (toolName) {
+      const registered = toolResultRendererRegistry.get(toolName);
+      if (registered) {
+        const custom = registered.render({ result, toolName, args, status });
+        // A renderer returns null/undefined to defer to the built-in renderer.
+        if (custom !== null && custom !== undefined) {
+          return <>{custom}</>;
+        }
+      }
+    }
+    return renderContent(result);
+  }
+);
 
 /** Max recursion depth for unwrapping nested JSON-encoded strings. */
 const MAX_UNWRAP_DEPTH = 3;

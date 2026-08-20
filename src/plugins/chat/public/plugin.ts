@@ -28,6 +28,7 @@ import { toMountPoint } from '../../opensearch_dashboards_react/public';
 import { SuggestedActionsService } from './services/suggested_action';
 import { isChatEnabled } from '../common/chat_capabilities';
 import { CommandRegistryService } from './services/command_registry_service';
+import { ToolResultRendererRegistryService } from './services/tool_result_renderer_registry_service';
 import { ConfirmationService } from './services/confirmation_service';
 import { AgenticMemoryProvider } from './services/agentic_memory_provider';
 import { ChatMountService } from './services/chat_mount_service';
@@ -52,6 +53,7 @@ export class ChatPlugin implements Plugin<ChatPluginSetup, ChatPluginStart> {
   private chatService: ChatService | undefined;
   private suggestedActionsService = new SuggestedActionsService();
   private commandRegistryService = new CommandRegistryService();
+  private toolResultRendererRegistryService = new ToolResultRendererRegistryService();
   private confirmationService = new ConfirmationService();
   private chatMountService?: ChatMountService;
   private paddingSizeSubscription?: Subscription;
@@ -103,6 +105,7 @@ export class ChatPlugin implements Plugin<ChatPluginSetup, ChatPluginStart> {
     this.coreSetup = core;
     const suggestedActionsSetup = this.suggestedActionsService.setup();
     const commandRegistrySetup = this.commandRegistryService.setup();
+    const toolResultRendererRegistrySetup = this.toolResultRendererRegistryService.setup();
 
     // Register suggested actions service with core chat service
     if (this.coreSetup?.chat?.setSuggestedActionsService) {
@@ -112,6 +115,7 @@ export class ChatPlugin implements Plugin<ChatPluginSetup, ChatPluginStart> {
     return {
       suggestedActionsService: suggestedActionsSetup,
       commandRegistry: commandRegistrySetup,
+      toolResultRendererRegistry: toolResultRendererRegistrySetup,
     };
   }
 

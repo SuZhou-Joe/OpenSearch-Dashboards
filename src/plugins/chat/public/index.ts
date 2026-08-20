@@ -18,3 +18,9 @@ export function plugin(initializerContext: PluginInitializerContext) {
 export { ChatPluginSetup, ChatPluginStart } from './types';
 export { SlashCommand, SlashCommandResult } from './services/slash_commands';
 export { ChatService } from './services/chat_service';
+export {
+  ToolResultRenderer,
+  ToolResultRendererProps,
+  ToolResultStatus,
+} from './services/tool_result_renderers';
+export { ToolResultRendererRegistrySetup } from './services/tool_result_renderer_registry_service';
